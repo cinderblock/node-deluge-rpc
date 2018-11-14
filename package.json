@@ -1,0 +1,12 @@
+{
+  "name": "deluge-rpc",
+  "version": "0.0.0",
+  "description": "Node.js API for Deluge's RPC API",
+  "main": "api.js",
+  "scripts": {
+    "start": "env NODE_REPL_HISTORY='.history' node repl.js"
+  },
+  "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
+  "author": "Cameron Tacklind <cameron@tacklind.com>",
+  "license": "MIT"
+}

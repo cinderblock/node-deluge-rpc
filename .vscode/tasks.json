@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build, Upload, and launch Serial Monitor",
+      "type": "shell",
+      "command": "make",
+      "args": ["run"],
+      "presentation": {
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceRoot}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Launch Serial Monitor",
+      "type": "shell",
+      "command": "make",
+      "args": ["serial-monitor"],
+      "presentation": {
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceRoot}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
