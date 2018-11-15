@@ -8,6 +8,46 @@ Node.js API for Deluge's RPC API
 yarn add deluge-rpc
 ```
 
+## Usage
+
+```js
+const tls = require('tls');
+const DelugeRPC = require('deluge-rpc');
+
+const socket = tls.connect(58846);
+const rpc = DelugeRPC(socket);
+
+let { result, sent } = rpc.request('daemon.info');
+
+// Monitor socket status
+sent.catch(console.error).then(() => {
+  console.log('Message sent');
+});
+
+// Responses are resolved. Error responses are rejections.
+result.catch(console.error).then(console.log);
+
+// Listen for asynchronous events from daemon
+rpc.events.on('delugeEvent', console.log);
+// Non fatal decoding errors that indicate something is wrong with the protocol...
+rpc.events.on('decodingError', console.log);
+
+// Alternate API: Don't throw on error responses
+const alt = DelugeRPC(socket, { resolveErrorResponses: true });
+
+let { result, sent } = rpc.request('daemon.info');
+sent.then(socketError => {
+  console.log(socketError || 'Message sent');
+});
+result.then(({ error, data }) => {
+  if (error) {
+    console.log(error);
+    return;
+  }
+  console.log(data);
+});
+```
+
 ## Development
 
 ```bash
