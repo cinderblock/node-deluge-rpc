@@ -1,7 +1,7 @@
 {
-  "name": "deluge-rpc",
+  "name": "deluge-rpc-socket",
   "version": "0.0.0",
-  "description": "Node.js API for Deluge's RPC API",
+  "description": "Node.js API for Deluge's Binary Socket RPC API",
   "main": "apiDelugeRPC.js",
   "scripts": {
     "start": "node --experimental-repl-await repl.js",

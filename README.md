@@ -1,18 +1,18 @@
-# node-deluge-rpc
+# node-deluge-rpc-socket
 
 Node.js API for Deluge's RPC API
 
 ## Setup
 
 ```bash
-yarn add deluge-rpc
+yarn add deluge-rpc-socket
 ```
 
 ## Usage
 
 ```js
 const tls = require('tls');
-const DelugeRPC = require('deluge-rpc');
+const DelugeRPC = require('deluge-rpc-socket');
 
 const socket = tls.connect(58846);
 const rpc = DelugeRPC(socket);
