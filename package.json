@@ -12,6 +12,9 @@
     "setup": "yarn && yarn mkconfig && install-vscode-extensions",
     "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp config.sample.js config.js"
   },
+  "files": [
+    "DelugeRPC.js"
+  ],
   "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
