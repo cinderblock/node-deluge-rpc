@@ -13,10 +13,10 @@
   "license": "MIT",
   "dependencies": {
     "pako": "^1.0.6",
-    "python-rencode": "^1.0.2",
-    "yarn": "^1.12.3"
+    "python-rencode": "^1.0.2"
   },
   "devDependencies": {
-    "install-vscode-extensions": "^1.0.0"
+    "install-vscode-extensions": "^1.0.0",
+    "yarn": "^1.12.3"
   }
 }
