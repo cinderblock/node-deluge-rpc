@@ -146,7 +146,7 @@ function DelugeRPC(socket, options) {
     socket.write(buff, cb);
   }
 
-  function rpcCall(method, args, kwargs) {
+  function request(method, args, kwargs) {
     if (kwargs === undefined && args !== undefined && !Array.isArray(args)) {
       kwargs = args;
       args = undefined;
@@ -168,7 +168,7 @@ function DelugeRPC(socket, options) {
     return { result, sent };
   }
 
-  return { rpcCall, events };
+  return { request, events };
 }
 
 module.exports = DelugeRPC;
