@@ -2,11 +2,21 @@
   "name": "deluge-rpc",
   "version": "0.0.0",
   "description": "Node.js API for Deluge's RPC API",
-  "main": "api.js",
+  "main": "apiDelugeRPC.js",
   "scripts": {
-    "start": "env NODE_REPL_HISTORY='.history' node repl.js"
+    "start": "node --experimental-repl-await repl.js",
+    "setup": "yarn && yarn mkconfig && install-vscode-extensions",
+    "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp config.sample.js config.js"
   },
   "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "pako": "^1.0.6",
+    "python-rencode": "^1.0.2",
+    "yarn": "^1.12.3"
+  },
+  "devDependencies": {
+    "install-vscode-extensions": "^1.0.0"
+  }
 }
