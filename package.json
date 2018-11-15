@@ -4,6 +4,7 @@
   "description": "Node.js API for Deluge's Binary Socket RPC API",
   "main": "apiDelugeRPC.js",
   "scripts": {
+    "prettier": "prettier --write \"**/*.@(js?(on)|md|prettierrc|clang-format|yml)\"",
     "start": "node --experimental-repl-await repl.js",
     "setup": "yarn && yarn mkconfig && install-vscode-extensions",
     "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp config.sample.js config.js"
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "install-vscode-extensions": "^1.0.0",
+    "prettier": "^1.15.2",
     "yarn": "^1.12.3"
   }
 }
