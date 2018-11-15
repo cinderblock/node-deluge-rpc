@@ -1,8 +1,3 @@
 {
-  "editor.formatOnSave": true,
-  "cSpell.words": [
-    "autobind",
-    "pako",
-    "rencode"
-  ]
+  "editor.formatOnSave": true
 }
