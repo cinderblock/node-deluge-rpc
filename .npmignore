@@ -5,5 +5,6 @@
 .prettierrc
 config.js
 config.sample.js
+cSpell.json
 yarn-error.log
 repl.js
