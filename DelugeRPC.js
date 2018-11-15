@@ -162,7 +162,7 @@ function DelugeRPC(socket, options) {
       rawSend([[id, method, args, kwargs]], resolve);
 
       // TODO: confirm this works as intended
-      socket.on('error', reject);
+      socket.on('error', resolveErrorResponses ? resolve : reject);
     });
 
     return { result, sent };
