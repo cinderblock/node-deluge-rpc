@@ -87,7 +87,7 @@ function DelugeRPC(socket, options) {
     } else if (type == EVENT) {
       events.emit('delugeEvent', { name: id, data });
     } else {
-      events.emit('error', 'Invalid payload type received:', type);
+      events.emit('decodingError', 'Invalid payload type received:', type);
     }
   }
 
@@ -125,7 +125,7 @@ function DelugeRPC(socket, options) {
       removeBufferBeginning(packetLength);
       handlePayload(payload);
     } else {
-      events.emit('error', 'Invalid header received:', header);
+      events.emit('decodingError', 'Invalid header received:', header);
     }
   });
 
