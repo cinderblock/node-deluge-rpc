@@ -53,11 +53,7 @@ sent.then(socketError => {
 });
 
 result.then(({ error, data }) => {
-  if (error) {
-    console.log(error);
-    return;
-  }
-  console.log(data);
+  console.log(error || data);
 });
 ```
 
