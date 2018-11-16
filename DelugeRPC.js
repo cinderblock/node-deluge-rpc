@@ -175,6 +175,7 @@ function DelugeRPC(socket, options) {
   }
 
   function getVersion() {
+    // TODO handle rejected to automatically detect version 1-ish
     return request('daemon.info');
   }
 
