@@ -190,7 +190,11 @@ function DelugeRPC(socket, options) {
     return res;
   }
 
-  return { request, events, login, getVersion };
+  function getAuthLevel() {
+    return authLevel;
+  }
+
+  return { request, events, login, getVersion, getAuthLevel };
 }
 
 module.exports = DelugeRPC;
