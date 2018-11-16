@@ -12,8 +12,6 @@ function DelugeRPC(socket, options) {
   options = options || {};
 
   let debug = options.debug;
-  // const user = options.user;
-  // const password = options.password;
   const protocolVersion = options.protocolVersion || 0;
   const resolveErrorResponses = options.resolveErrorResponses;
 
