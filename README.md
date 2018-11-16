@@ -14,7 +14,14 @@ yarn add deluge-rpc-socket
 const tls = require('tls');
 const DelugeRPC = require('deluge-rpc-socket');
 
-const socket = tls.connect(58846);
+const socket = tls.connect(
+  58846,
+  {
+    // Deluge often runs with self-signed certificates
+    rejectUnauthorized: false,
+  }
+);
+
 const rpc = DelugeRPC(socket);
 
 let { result, sent } = rpc.login('username', 'password');
