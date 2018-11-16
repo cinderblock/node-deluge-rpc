@@ -174,7 +174,7 @@ function DelugeRPC(socket, options) {
     return { result, sent };
   }
 
-  function getInfo() {
+  function getVersion() {
     return request('daemon.info');
   }
 
@@ -190,7 +190,7 @@ function DelugeRPC(socket, options) {
     return res;
   }
 
-  return { request, events, login, getInfo };
+  return { request, events, login, getVersion };
 }
 
 module.exports = DelugeRPC;
