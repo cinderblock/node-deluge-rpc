@@ -47,9 +47,11 @@ rpc.events.on('decodingError', console.log);
 const alt = DelugeRPC(socket, { resolveErrorResponses: true });
 
 let { result, sent } = rpc.request('daemon.info');
+
 sent.then(socketError => {
   console.log(socketError || 'Message sent');
 });
+
 result.then(({ error, data }) => {
   if (error) {
     console.log(error);
