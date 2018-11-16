@@ -17,7 +17,7 @@ const DelugeRPC = require('deluge-rpc-socket');
 const socket = tls.connect(58846);
 const rpc = DelugeRPC(socket);
 
-let { result, sent } = rpc.request('daemon.info');
+let { result, sent } = rpc.login('username', 'password');
 
 // Monitor socket status
 sent.catch(console.error).then(() => {
