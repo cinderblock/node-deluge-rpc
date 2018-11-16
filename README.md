@@ -52,8 +52,8 @@ sent.then(socketError => {
   console.log(socketError || 'Message sent');
 });
 
-result.then(({ error, data }) => {
-  console.log(error || data);
+result.then(({ error, response }) => {
+  console.log(error || response);
 });
 ```
 
