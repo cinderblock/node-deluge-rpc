@@ -56,6 +56,6 @@ result.then(({ error, data }) => {
 
 ```bash
 yarn setup
-# Launch a REPL with `api` and `config` available in the context
+# Launch a REPL with `DelugeRPC` and `config` available in the context and useful commands in history
 yarn start
 ```
