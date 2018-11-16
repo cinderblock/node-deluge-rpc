@@ -136,7 +136,7 @@ function DelugeRPC(socket, options) {
       const header = Buffer.allocUnsafe(5);
       header.writeUInt8(protocolVersion, 0);
       header.writeUInt32BE(buff.length, 1);
-      buff = Buffer.concat(header, buff);
+      buff = Buffer.concat([header, buff]);
     } else {
       throw Error('Unknown protocol version!');
     }
