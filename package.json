@@ -4,8 +4,8 @@
   "description": "Node.js API for Deluge's Binary Socket RPC API",
   "main": "apiDelugeRPC.js",
   "scripts": {
-    "prettier": "prettier --write \"**/*.@(js?(on)|md|prettierrc|clang-format|yml)\"",
-    "preversion": "yarn prettier",
+    "format": "prettier --write \"**/*.@(js?(on)|md|prettierrc|clang-format|yml)\"",
+    "preversion": "yarn format",
     "postversion": "npm publish",
     "postpublish": "git push origin master --tags",
     "start": "node --experimental-repl-await repl.js",
