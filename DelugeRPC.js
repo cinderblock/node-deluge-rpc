@@ -152,6 +152,9 @@ function DelugeRPC(socket, options) {
       args = undefined;
     }
 
+    if (args === undefined) args = [];
+    if (kwargs === undefined) kwargs = {};
+
     const id = nextRequestId++;
 
     const result = new Promise((resolve, reject) => {
