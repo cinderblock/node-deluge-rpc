@@ -174,7 +174,15 @@ function DelugeRPC(socket, options) {
     return { result, sent };
   }
 
-  return { request, events };
+  function getInfo() {
+    return request('daemon.info');
+  }
+
+  function login(username, password) {
+    return request('daemon.login', [username, password]);
+  }
+
+  return { request, events, login, getInfo };
 }
 
 module.exports = DelugeRPC;
