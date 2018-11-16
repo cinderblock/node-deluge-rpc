@@ -20,11 +20,12 @@
   "license": "MIT",
   "dependencies": {
     "pako": "^1.0.6",
-    "python-rencode": "^1.0.2"
+    "python-rencode": "^1.1.2"
   },
   "devDependencies": {
     "install-vscode-extensions": "^1.0.0",
     "prettier": "^1.15.2",
+    "repl-live": "^0.1.0",
     "yarn": "^1.12.3"
   }
 }
