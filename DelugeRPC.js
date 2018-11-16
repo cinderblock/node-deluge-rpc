@@ -8,9 +8,7 @@ function newSize(needed) {
   return 1 << (needed - 1).toString(2).length;
 }
 
-function DelugeRPC(socket, options) {
-  options = options || {};
-
+function DelugeRPC(socket, options = {}) {
   let debug = options.debug;
   const protocolVersion = options.protocolVersion || 0;
   const resolveErrorResponses = options.resolveErrorResponses;
@@ -144,14 +142,11 @@ function DelugeRPC(socket, options) {
     socket.write(buff, cb);
   }
 
-  function request(method, args, kwargs) {
-    if (kwargs === undefined && args !== undefined && !Array.isArray(args)) {
+  function request(method, args = [], kwargs = {}) {
+    if (!Array.isArray(args)) {
       kwargs = args;
-      args = undefined;
+      args = [];
     }
-
-    if (args === undefined) args = [];
-    if (kwargs === undefined) kwargs = {};
 
     const id = nextRequestId++;
 
