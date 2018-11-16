@@ -178,8 +178,16 @@ function DelugeRPC(socket, options) {
     return request('daemon.info');
   }
 
+  let authLevel = 0;
+
   function login(username, password) {
-    return request('daemon.login', [username, password]);
+    const res = request('daemon.login', [username, password]);
+
+    res.result.then(level => {
+      authLevel = level;
+    });
+
+    return res;
   }
 
   return { request, events, login, getInfo };
