@@ -3,4 +3,5 @@ module.exports = {
   password: 'password',
   host: 'host',
   port: 58846,
+  rejectUnauthorized: false,
 };
