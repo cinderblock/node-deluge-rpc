@@ -194,7 +194,11 @@ function DelugeRPC(socket, options) {
     return authLevel;
   }
 
-  return { request, events, login, getVersion, getAuthLevel };
+  function addTorrentUrl(url, options, headers) {
+    return request('core.add_torrent_url', [url, options, headers]);
+  }
+
+  return { request, events, login, getVersion, getAuthLevel, addTorrentUrl };
 }
 
 module.exports = DelugeRPC;
