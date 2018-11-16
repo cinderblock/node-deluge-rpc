@@ -159,10 +159,10 @@ function DelugeRPC(socket, options) {
     });
 
     const sent = new Promise((resolve, reject) => {
-      rawSend([[id, method, args, kwargs]], resolve);
-
       // TODO: confirm this works as intended
       socket.on('error', resolveErrorResponses ? resolve : reject);
+      
+      rawSend([[id, method, args, kwargs]], resolve);
     });
 
     return { result, sent };
