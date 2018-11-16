@@ -31,8 +31,11 @@ result.catch(console.error).then(console.log);
 rpc.events.on('delugeEvent', console.log);
 // Non fatal decoding errors that indicate something is wrong with the protocol...
 rpc.events.on('decodingError', console.log);
+```
 
-// Alternate API: Don't throw on error responses
+### Alternate API: Don't throw on error responses
+
+```js
 const alt = DelugeRPC(socket, { resolveErrorResponses: true });
 
 let { result, sent } = rpc.request('daemon.info');
