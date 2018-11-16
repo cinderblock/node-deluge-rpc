@@ -29,6 +29,7 @@ result.catch(console.error).then(console.log);
 
 // Listen for asynchronous events from daemon
 rpc.events.on('delugeEvent', console.log);
+
 // Non fatal decoding errors that indicate something is wrong with the protocol...
 rpc.events.on('decodingError', console.log);
 ```
