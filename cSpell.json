@@ -3,6 +3,7 @@
   "language": "en",
   "words": [
     "cinderblock",
+    "filedump",
     "kwargs",
     "mkconfig",
     "pako",
@@ -10,10 +11,12 @@
     "postversion",
     "prettierrc",
     "preversion",
+    "priv",
     "reannounce",
     "rencode",
     "rpc",
-    "tacklind"
+    "tacklind",
+    "webseeds"
   ],
   "flagWords": []
 }
