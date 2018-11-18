@@ -138,9 +138,7 @@ function DelugeRPC(
       if (currentLength < packetLength) return;
 
       // Copy the payload from the working buffer
-      const payload = Buffer.from(
-        pako.inflate(new Uint8Array(buffer.buffer, 5, payloadLength))
-      );
+      const payload = Buffer.from(pako.inflate(buffer.slice(5, payloadLength)));
       removeBufferBeginning(packetLength);
       handlePayload(payload);
       return;
