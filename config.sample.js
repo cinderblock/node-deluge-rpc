@@ -1,7 +1,15 @@
 module.exports = {
-  user: 'user',
-  password: 'password',
-  host: 'host',
-  port: 58846,
-  rejectUnauthorized: false,
+  login: {
+    user: 'user',
+    pass: 'password',
+  },
+  tls: {
+    host: 'host',
+    port: 58846,
+    rejectUnauthorized: false,
+  },
+  rpcOpts: {
+    debug: false,
+    resolveErrorResponses: true,
+  },
 };
