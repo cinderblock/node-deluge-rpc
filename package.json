@@ -12,6 +12,7 @@
     "preversion": "yarn format",
     "postversion": "npm publish",
     "build": "tsc --declaration",
+    "checks": "yarn format && yarn build && yarn test",
     "prepublishOnly": "yarn build",
     "postpublish": "git push origin master --tags",
     "start": "yarn repl",
