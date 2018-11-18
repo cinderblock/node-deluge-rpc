@@ -8,7 +8,7 @@
     "format": "prettier --write \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
     "ci": "yarn test && yarn coveralls",
     "test": "jest",
-    "coveralls": "cat ./coverage/lcov.info | coveralls",
+    "coveralls": "coveralls < coverage/lcov.info",
     "preversion": "yarn format",
     "postversion": "npm publish",
     "build": "tsc --declaration",
