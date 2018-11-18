@@ -112,13 +112,12 @@ function DelugeRPC(
     if (currentLength < 1) return;
 
     const header = buffer[0];
+    const slice = buffer.slice(0, currentLength);
 
     if (header == 0x78) {
       // Detect common zlib header as format from Deluge ^1.0.0
       try {
-        const payload = Buffer.from(
-          pako.inflate(new Uint8Array(buffer.buffer, 1, currentLength - 1))
-        );
+        const payload = Buffer.from(pako.inflate(slice));
         removeBufferBeginning(currentLength);
         handlePayload(payload);
         return;
