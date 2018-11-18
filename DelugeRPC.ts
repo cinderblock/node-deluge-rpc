@@ -118,8 +118,8 @@ function DelugeRPC(
       // Detect common zlib header as format from Deluge ^1.0.0
       try {
         const payload = Buffer.from(pako.inflate(slice));
-        removeBufferBeginning(currentLength);
         handlePayload(payload);
+        removeBufferBeginning(currentLength);
       } catch (err) {
         debug('Error inflating data');
         debug(err);
