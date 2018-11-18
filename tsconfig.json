@@ -1,0 +1,9 @@
+{
+  "files": ["DelugeRPC.ts"],
+  "compilerOptions": {
+    "module": "commonjs",
+    "lib": ["es2015"],
+    "strict": true,
+    "esModuleInterop": true
+  }
+}

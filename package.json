@@ -4,28 +4,44 @@
   "description": "Node.js API for Deluge's Binary Socket RPC API",
   "main": "DelugeRPC.js",
   "scripts": {
-    "format": "prettier --write \"**/*.@(js?(on)|md|prettierrc|clang-format|yml)\"",
+    "format": "prettier --write \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
+    "ci": "yarn test && yarn coveralls",
+    "test": "jest",
+    "coveralls": "cat ./coverage/lcov.info | coveralls",
     "preversion": "yarn format",
     "postversion": "npm publish",
+    "build": "tsc --declaration",
+    "prepublishOnly": "yarn build",
     "postpublish": "git push origin master --tags",
-    "start": "node --experimental-repl-await repl.js",
+    "start": "yarn repl",
+    "repl": "ts-node --experimental-repl-await repl",
     "setup": "yarn && yarn mkconfig && install-vscode-extensions",
-    "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp config.sample.js config.js"
+    "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp -i config.sample.js config.js"
   },
   "files": [
-    "DelugeRPC.js"
+    "DelugeRPC.ts",
+    "DelugeRPC.js",
+    "DelugeRPC.d.ts"
   ],
   "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
   "dependencies": {
+    "deluge-rpc-socket": "^0.1.2",
     "pako": "^1.0.6",
-    "python-rencode": "^1.1.2"
+    "python-rencode": "^1.3.1"
   },
   "devDependencies": {
+    "@types/jest": "^23.3.9",
+    "@types/node": "^10.12.9",
+    "coveralls": "^3.0.2",
     "install-vscode-extensions": "^1.0.0",
+    "jest": "^23.6.0",
     "prettier": "^1.15.2",
     "repl-live": "^0.1.0",
+    "ts-jest": "^23.10.4",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.1.6",
     "yarn": "^1.12.3"
   }
 }
