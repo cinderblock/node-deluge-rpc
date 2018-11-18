@@ -1,4 +1,4 @@
-# node-deluge-rpc-socket
+# Node.js Deluge RPC Socket
 
 Node.js API for Deluge's RPC API
 
