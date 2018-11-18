@@ -164,8 +164,17 @@ function DelugeRPC(
     socket.write(buff, cb);
   }
 
-  type Sent = undefined | { error: Error };
-  type Result<T> = T | { error: Error } | { response: T };
+  // Expected response of default API
+  type SentDefault = undefined;
+  type ResultDefault<T> = T;
+
+  // Expected response of alternate API
+  type SentAlternate = undefined | { error: Error };
+  type ResultAlternate<T> = { error: Error } | { response: T };
+
+  // TODO: See if we can return Default or Alternate response types based on function arguments
+  type Sent = SentDefault | SentAlternate;
+  type Result<T> = ResultDefault<T> | ResultAlternate<T>;
 
   // TODO: T must be one of RencodableData
   type ResponseType<T> = {
