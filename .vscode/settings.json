@@ -1,3 +1,8 @@
 {
+  "files.exclude": {
+    "node_modules": true,
+    "DelugeRPC.js": true,
+    "DelugeRPC.d.ts": true
+  },
   "editor.formatOnSave": true
 }
