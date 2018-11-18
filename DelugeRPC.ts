@@ -262,8 +262,10 @@ function DelugeRPC(
       getConfigValues: (keys: string[]) =>
         request('core.get_config_values', [keys]),
       setConfig: (config: FlatMap) => request('core.set_config', [config]),
-      getListenPort: () => request('core.get_listen_port'),
-      getNumConnections: () => request('core.get_num_connections'),
+      getListenPort: () =>
+        <ResponseType<number>>request('core.get_listen_port'),
+      getNumConnections: () =>
+        <ResponseType<number>>request('core.get_num_connections'),
       getAvailablePlugins: () => request('core.get_available_plugins'),
       getEnabledPlugins: () => request('core.get_enabled_plugins'),
       enablePlugin: (plugin: string) => request('core.enable_plugin', [plugin]),
