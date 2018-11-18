@@ -120,16 +120,17 @@ function DelugeRPC(
         const payload = Buffer.from(pako.inflate(slice));
         removeBufferBeginning(currentLength);
         handlePayload(payload);
-        return;
       } catch (err) {
         debug('Error inflating data');
         debug(err);
 
         // This just means we don't have a full packet from the server back yet.
         // TODO: confirm ^^^
-        return;
       }
-    } else if (header == 1) {
+      return;
+    }
+
+    if (header == 1) {
       // Deluge ^2.0.0 (under development)
       if (currentLength < 5) return;
       const payloadLength = buffer.readInt32BE(1);
@@ -142,9 +143,10 @@ function DelugeRPC(
       );
       removeBufferBeginning(packetLength);
       handlePayload(payload);
-    } else {
-      events.emit('decodingError', 'Invalid header received:', header);
+      return;
     }
+
+    events.emit('decodingError', 'Invalid header received:', header);
   });
 
   function rawSend(data: RencodableData, cb: Function) {
