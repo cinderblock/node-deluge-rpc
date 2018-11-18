@@ -263,7 +263,8 @@ function DelugeRPC(
       ) => request('core.get_torrents_status', [filterDict, keys], options),
       getFilterTree: (options: { show_zero_hits?: boolean }) =>
         request('core.get_filter_tree', options),
-      getSessionState: () => request('core.get_session_state'),
+      getSessionState: () =>
+        <ResponseType<string[]>>request('core.get_session_state'),
       getConfig: () => request('core.get_config'),
       getConfigValue: (key: string) => request('core.get_config_value', [key]),
       getConfigValues: (keys: string[]) =>
