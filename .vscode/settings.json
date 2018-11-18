@@ -1,6 +1,7 @@
 {
   "files.exclude": {
     "node_modules": true,
+    "coverage/": true,
     "DelugeRPC.js": true,
     "DelugeRPC.d.ts": true
   },
