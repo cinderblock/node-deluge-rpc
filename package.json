@@ -15,7 +15,7 @@
     "prepublishOnly": "yarn build",
     "postpublish": "git push origin master --tags",
     "start": "yarn repl",
-    "repl": "ts-node --experimental-repl-await repl",
+    "repl": "ts-node repl.ts --experimental-repl-await",
     "setup": "yarn && yarn mkconfig && install-vscode-extensions",
     "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp -i config.sample.js config.js"
   },
