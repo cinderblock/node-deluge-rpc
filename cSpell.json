@@ -5,6 +5,7 @@
     "cinderblock",
     "filedump",
     "kwargs",
+    "libtorrent",
     "mkconfig",
     "pako",
     "postpublish",
@@ -13,7 +14,9 @@
     "preversion",
     "priv",
     "reannounce",
+    "rencodable",
     "rencode",
+    "rescan",
     "rpc",
     "tacklind",
     "webseeds"
