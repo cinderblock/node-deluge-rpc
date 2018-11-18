@@ -2,7 +2,7 @@
   "name": "deluge-rpc-socket",
   "version": "0.2.0",
   "description": "Node.js API for Deluge's Binary Socket RPC API",
-  "main": "DelugeRPC.js",
+  "main": "DelugeRPC",
   "scripts": {
     "format": "prettier --write \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
     "ci": "yarn test && yarn coveralls",
