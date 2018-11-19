@@ -2,5 +2,5 @@
 /config.js
 yarn-error.log
 node_modules/
-/DelugeRPC.js
-/DelugeRPC.d.ts
+/src/DelugeRPC.js
+/src/DelugeRPC.d.ts

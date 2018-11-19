@@ -1,5 +1,5 @@
 {
-  "files": ["DelugeRPC.ts"],
+  "files": ["src/DelugeRPC.ts"],
   "compilerOptions": {
     "module": "commonjs",
     "lib": ["es2015"],

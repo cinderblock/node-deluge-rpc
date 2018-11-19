@@ -2,8 +2,8 @@
   "name": "deluge-rpc-socket",
   "version": "0.2.0",
   "description": "Node.js API for Deluge's Binary Socket RPC API",
-  "main": "DelugeRPC",
-  "types": "DelugeRPC.d.ts",
+  "main": "src/DelugeRPC",
+  "types": "src/DelugeRPC.d.ts",
   "scripts": {
     "format": "prettier --write \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
     "ci": "yarn test && yarn coveralls",
@@ -21,9 +21,9 @@
     "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp -i config.sample.js config.js"
   },
   "files": [
-    "DelugeRPC.ts",
-    "DelugeRPC.js",
-    "DelugeRPC.d.ts"
+    "src/DelugeRPC.ts",
+    "src/DelugeRPC.js",
+    "src/DelugeRPC.d.ts"
   ],
   "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
