@@ -115,17 +115,19 @@ function DelugeRPC(
 
     if (header == 0x78) {
       // Detect common zlib header as format from Deluge ^1.0.0
+      let payload;
       try {
-        const payload = decode(Buffer.from(pako.inflate(slice)));
+        payload = decode(Buffer.from(pako.inflate(slice)));
         removeBufferBeginning(currentLength);
-        handlePayload(payload);
       } catch (err) {
         debug('Error inflating data');
         debug(err);
 
         // This just means we don't have a full packet from the server back yet.
         // TODO: confirm ^^^
+        return;
       }
+      handlePayload(payload);
       return;
     }
 
