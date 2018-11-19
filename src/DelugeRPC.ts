@@ -84,16 +84,15 @@ function DelugeRPC(
         };
   }
 
-  function handlePayload(buff: Buffer) {
+  function handlePayload(payload: RencodableData) {
     const RESPONSE = 1;
     const ERROR = 2;
     const EVENT = 3;
-    const decoded = decode(buff, true);
 
     debug('Decoded Data!');
-    debug(decoded);
+    debug(payload);
 
-    const [type, id, data] = <[number, number | string, RencodableData]>decoded;
+    const [type, id, data] = <[number, number | string, RencodableData]>payload;
 
     if (type == RESPONSE) {
       getResolvers(<number>id).resolve(data);
@@ -117,9 +116,9 @@ function DelugeRPC(
     if (header == 0x78) {
       // Detect common zlib header as format from Deluge ^1.0.0
       try {
-        const payload = Buffer.from(pako.inflate(slice));
-        handlePayload(payload);
+        const payload = decode(Buffer.from(pako.inflate(slice)));
         removeBufferBeginning(currentLength);
+        handlePayload(payload);
       } catch (err) {
         debug('Error inflating data');
         debug(err);
@@ -138,7 +137,9 @@ function DelugeRPC(
       if (currentLength < packetLength) return;
 
       // Copy the payload from the working buffer
-      const payload = Buffer.from(pako.inflate(buffer.slice(5, payloadLength)));
+      const payload = decode(
+        Buffer.from(pako.inflate(buffer.slice(5, payloadLength)))
+      );
       removeBufferBeginning(packetLength);
       handlePayload(payload);
       return;
