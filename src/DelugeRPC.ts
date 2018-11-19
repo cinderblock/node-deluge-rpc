@@ -120,11 +120,9 @@ function DelugeRPC(
         payload = decode(Buffer.from(pako.inflate(slice)));
         removeBufferBeginning(currentLength);
       } catch (err) {
+        // This is expected if we're receiving a large chunk of data and it got chunked by the network.
         debug('Error inflating data');
         debug(err);
-
-        // This just means we don't have a full packet from the server back yet.
-        // TODO: confirm ^^^
         return;
       }
       handlePayload(payload);
