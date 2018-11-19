@@ -1,5 +1,5 @@
 console.log();
-console.log('Check history for useful commands');
+console.log('Check history for useful commands. (Press up)');
 console.log();
 
 const tls = require('tls');
