@@ -12,7 +12,7 @@ yarn add deluge-rpc-socket
 
 ```js
 const tls = require('tls');
-const DelugeRPC = require('deluge-rpc-socket');
+const DelugeRPC = require('deluge-rpc-socket').default;
 
 const socket = tls.connect(
   58846,
@@ -24,7 +24,7 @@ const socket = tls.connect(
 
 const rpc = DelugeRPC(socket);
 
-let { result, sent } = rpc.login('username', 'password');
+let { result, sent } = rpc.daemon.login('username', 'password');
 
 // Monitor socket status
 sent.catch(console.error).then(() => {
