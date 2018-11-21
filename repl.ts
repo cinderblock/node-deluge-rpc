@@ -59,8 +59,8 @@ repl.context.login = async (
 repl.rli.history = [
   'connect(config)',
   'login(config)',
-  "rpc.daemon.info().result.catch(() => {console.log('Looks like v1.x')}).then(console.log) && true",
-  'res = rpc.core.getSessionState()',
+  "res = rpc.daemon.info().result.then(({response, error}) => console.log(error ? 'Looks like v1.x' : response)); undefined",
+  'res = rpc.core.getSessionState().result.then(t => console.log(torrents = t.response)); undefined',
   'c.end()',
 ];
 
