@@ -27,12 +27,14 @@ const rpc = DelugeRPC(socket);
 let { result, sent } = rpc.daemon.login('username', 'password');
 
 // Monitor socket status
-sent.catch(console.error).then(() => {
-  console.log('Message sent');
-});
+sent
+  .then(() => {
+    console.log('Message sent');
+  })
+  .catch(console.error);
 
 // Responses are resolved. Error responses are rejections.
-result.catch(console.error).then(console.log);
+result.then(console.log).catch(console.error);
 
 // Listen for asynchronous events from daemon
 rpc.events.on('delugeEvent', console.log);
