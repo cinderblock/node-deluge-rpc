@@ -222,18 +222,24 @@ export default function DelugeRPC(
 
   type FlatMap = { [x: string]: string };
 
+  type FileDump = Promise<string> | string;
+
   type TorrentOptions = FlatMap;
 
   return {
     request,
     events,
     core: {
-      addTorrentFile: (
+      addTorrentFile: async (
         filename: string,
-        filedump: string,
+        filedump: FileDump,
         torrentOptions: TorrentOptions = {}
       ) =>
-        request('core.add_torrent_file', [filename, filedump, torrentOptions]),
+        request('core.add_torrent_file', [
+          filename,
+          await filedump,
+          torrentOptions,
+        ]),
       addTorrentUrl: (
         url: string,
         torrentOptions: TorrentOptions = {},
@@ -321,8 +327,8 @@ export default function DelugeRPC(
           trackers,
           add_to_session,
         ]),
-      uploadPlugin: (filename: string, filedump: string) =>
-        request('core.upload_plugin', [filename, filedump]),
+      uploadPlugin: async (filename: string, filedump: FileDump) =>
+        request('core.upload_plugin', [filename, await filedump]),
       rescanPlugins: () => request('core.rescan_plugins'),
       renameFiles: () => request('core.rename_files'),
       renameFolder: () => request('core.rename_folder'),
