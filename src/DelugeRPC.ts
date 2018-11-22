@@ -300,9 +300,11 @@ export default function DelugeRPC(
     moveStorage: (torrentIds: string[], dest: string) =>
       request('core.move_storage', [torrentIds, dest]),
 
-    pauseAllTorrents: () => request('core.pause_all_torrents'),
+    pauseAllTorrents: () =>
+      <ResponseType<undefined>>request('core.pause_all_torrents'),
 
-    resumeAllTorrents: () => request('core.resume_all_torrents'),
+    resumeAllTorrents: () =>
+      <ResponseType<undefined>>request('core.resume_all_torrents'),
 
     resumeTorrent: (torrentIds: string[]) =>
       request('core.resume_torrent', [torrentIds]),
