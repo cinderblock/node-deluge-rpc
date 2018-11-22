@@ -262,7 +262,7 @@ export default function DelugeRPC(
     ) =>
       request('core.add_torrent_file', [
         filename,
-        handleFiledump(filedump),
+        await handleFiledump(filedump),
         snakeCaseKeys(torrentOptions),
       ]),
 
@@ -398,7 +398,7 @@ export default function DelugeRPC(
       ]),
 
     uploadPlugin: async (filename: string, filedump: FileDump) =>
-      request('core.upload_plugin', [filename, handleFiledump(filedump)]),
+      request('core.upload_plugin', [filename, await handleFiledump(filedump)]),
 
     rescanPlugins: () => request('core.rescan_plugins'),
     renameFiles: () => request('core.rename_files'),
