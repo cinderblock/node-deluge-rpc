@@ -260,6 +260,7 @@ export default function DelugeRPC(
           await filedump,
           snakeCaseKeys(torrentOptions),
         ]),
+
       addTorrentUrl: (
         url: string,
         torrentOptions: TorrentOptions = {},
@@ -270,63 +271,90 @@ export default function DelugeRPC(
           [url, snakeCaseKeys(torrentOptions)],
           options
         ),
+
       addTorrentMagnet: (uri: string, torrentOptions: TorrentOptions = {}) =>
         request('core.add_torrent_magnet', [
           uri,
           snakeCaseKeys(torrentOptions),
         ]),
+
       removeTorrent: (torrentId: string, removeData: boolean) =>
         request('core.remove_torrent', [torrentId, removeData]),
+
       getSessionStatus: (keys: string[]) =>
         request('core.get_session_status', [keys]),
+
       getCacheStatus: () => request('core.get_cache_status'),
+
       forceReannounce: (torrentIds: string[]) =>
         request('core.force_reannounce', [torrentIds]),
+
       pauseTorrent: (torrentIds: string[]) =>
         request('core.pause_torrent', [torrentIds]),
+
       connectPeer: (torrentId: string, ip: string, port: number) =>
         request('core.connect_peer', [torrentId, ip, port]),
+
       moveStorage: (torrentIds: string[], dest: string) =>
         request('core.move_storage', [torrentIds, dest]),
+
       pauseAllTorrents: () => request('core.pause_all_torrents'),
+
       resumeAllTorrents: () => request('core.resume_all_torrents'),
+
       resumeTorrent: (torrentIds: string[]) =>
         request('core.resume_torrent', [torrentIds]),
+
       getTorrentStatus: (
         torrentId: string,
         keys: string[],
         options: { diff?: boolean } = {}
       ) => request('core.get_torrent_status', [torrentId, keys], options),
+
       getTorrentsStatus: (
         filterDict: FlatMap,
         keys: string[],
         options: { diff?: boolean } = {}
       ) => request('core.get_torrents_status', [filterDict, keys], options),
+
       getFilterTree: (options: {
         showZeroHits?: boolean;
         hideCats?: string[];
       }) => request('core.get_filter_tree', snakeCaseKeys(options)),
+
       getSessionState: () =>
         <ResponseType<string[]>>request('core.get_session_state'),
+
       getConfig: () => request('core.get_config'),
+
       getConfigValue: (key: string) => request('core.get_config_value', [key]),
+
       getConfigValues: (keys: string[]) =>
         request('core.get_config_values', [keys]),
+
       setConfig: (config: FlatMap) => request('core.set_config', [config]),
+
       getListenPort: () =>
         <ResponseType<number>>request('core.get_listen_port'),
+
       getNumConnections: () =>
         <ResponseType<number>>request('core.get_num_connections'),
+
       getAvailablePlugins: () =>
         <ResponseType<string[]>>request('core.get_available_plugins'),
+
       getEnabledPlugins: () =>
         <ResponseType<string[]>>request('core.get_enabled_plugins'),
+
       enablePlugin: (plugin: string) =>
         <ResponseType<boolean>>request('core.enable_plugin', [plugin]),
+
       disablePlugin: (plugin: string) =>
         <ResponseType<boolean>>request('core.disable_plugin', [plugin]),
+
       forceRecheck: (torrentIds: string[]) =>
         <ResponseType<boolean>>request('core.force_recheck', [torrentIds]),
+
       setTorrentOptions: (
         torrentIds: string[],
         torrentOptions: TorrentOptions = {}
@@ -335,11 +363,14 @@ export default function DelugeRPC(
           torrentIds,
           snakeCaseKeys(torrentOptions),
         ]),
+
       setTorrentTrackers: (
         torrentId: string,
         trackers: { url: string; tier: string }[]
       ) => request('core.set_torrent_trackers', [torrentId, trackers]),
+
       getPathSize: (path: string) => request('core.get_path_size', [path]),
+
       createTorrent: (
         path: string,
         tracker: string,
@@ -364,8 +395,10 @@ export default function DelugeRPC(
           trackers,
           addToSession,
         ]),
+
       uploadPlugin: async (filename: string, filedump: FileDump) =>
         request('core.upload_plugin', [filename, await filedump]),
+
       rescanPlugins: () => request('core.rescan_plugins'),
       renameFiles: () => request('core.rename_files'),
       renameFolder: () => request('core.rename_folder'),
