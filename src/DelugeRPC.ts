@@ -296,6 +296,7 @@ export default function DelugeRPC(
       ) => request('core.get_torrents_status', [filterDict, keys], options),
       getFilterTree: (options: {
         showZeroHits?: boolean;
+        hideCats?: string[];
       }) => request('core.get_filter_tree', snakeCaseKeys(options)),
       getSessionState: () =>
         <ResponseType<string[]>>request('core.get_session_state'),
