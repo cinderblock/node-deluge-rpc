@@ -1,6 +1,4 @@
 'use strict';
-
-const fs = require('fs').promises;
 const snakeCaseKeys = require('snakecase-keys');
 const camelCaseKeys = require('camelcase-keys');
 
@@ -8,6 +6,11 @@ const EventEmitter = require('events').EventEmitter;
 const pako = require('pako');
 
 import { Socket } from 'net';
+
+import { promisify } from 'util';
+import { readFile } from 'fs';
+
+const readFilePromise = promisify(readFile);
 
 import {
   encode,
@@ -30,7 +33,7 @@ function getDebug(d: boolean | Function | undefined) {
 }
 
 export async function loadFile(file: string) {
-  return (<Buffer>await fs.readFile(file)).toString('base64');
+  return (<Buffer>await readFilePromise(file)).toString('base64');
 }
 
 export default function DelugeRPC(
