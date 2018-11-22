@@ -27,8 +27,8 @@ function getDebug(d: boolean | Function | undefined) {
     : () => {};
 }
 
-export async function loadFile(file: string): Promise<string> {
-  return (await fs.readFile(file)).toString('base64');
+export async function loadFile(file: string) {
+  return (<Buffer>await fs.readFile(file)).toString('base64');
 }
 
 export default function DelugeRPC(
