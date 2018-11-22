@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs').promises;
+
 const EventEmitter = require('events').EventEmitter;
 const pako = require('pako');
 
@@ -23,6 +25,10 @@ function getDebug(d: boolean | Function | undefined) {
     : d === true
     ? (...args: any[]) => console.log('DEBUG:', ...args)
     : () => {};
+}
+
+export async function loadFile(file: string): Promise<string> {
+  return (await fs.readFile(file)).toString('base64');
 }
 
 export default function DelugeRPC(
