@@ -309,13 +309,16 @@ export default function DelugeRPC(
         <ResponseType<number>>request('core.get_listen_port'),
       getNumConnections: () =>
         <ResponseType<number>>request('core.get_num_connections'),
-      getAvailablePlugins: () => request('core.get_available_plugins'),
-      getEnabledPlugins: () => request('core.get_enabled_plugins'),
-      enablePlugin: (plugin: string) => request('core.enable_plugin', [plugin]),
+      getAvailablePlugins: () =>
+        <ResponseType<string[]>>request('core.get_available_plugins'),
+      getEnabledPlugins: () =>
+        <ResponseType<string[]>>request('core.get_enabled_plugins'),
+      enablePlugin: (plugin: string) =>
+        <ResponseType<boolean>>request('core.enable_plugin', [plugin]),
       disablePlugin: (plugin: string) =>
-        request('core.disable_plugin', [plugin]),
+        <ResponseType<boolean>>request('core.disable_plugin', [plugin]),
       forceRecheck: (torrentIds: string[]) =>
-        request('core.force_recheck', [torrentIds]),
+        <ResponseType<boolean>>request('core.force_recheck', [torrentIds]),
       setTorrentOptions: (
         torrentIds: string[],
         torrentOptions: TorrentOptions = {}
