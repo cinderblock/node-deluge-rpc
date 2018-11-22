@@ -258,15 +258,23 @@ export default function DelugeRPC(
         request('core.add_torrent_file', [
           filename,
           await filedump,
-          torrentOptions,
+          snakeCaseKeys(torrentOptions),
         ]),
       addTorrentUrl: (
         url: string,
         torrentOptions: TorrentOptions = {},
         options: { headers?: FlatMap } = {}
-      ) => request('core.add_torrent_url', [url, torrentOptions], options),
+      ) =>
+        request(
+          'core.add_torrent_url',
+          [url, snakeCaseKeys(torrentOptions)],
+          options
+        ),
       addTorrentMagnet: (uri: string, torrentOptions: TorrentOptions = {}) =>
-        request('core.add_torrent_magnet', [uri, torrentOptions]),
+        request('core.add_torrent_magnet', [
+          uri,
+          snakeCaseKeys(torrentOptions),
+        ]),
       removeTorrent: (torrentId: string, removeData: boolean) =>
         request('core.remove_torrent', [torrentId, removeData]),
       getSessionStatus: (keys: string[]) =>
@@ -322,7 +330,11 @@ export default function DelugeRPC(
       setTorrentOptions: (
         torrentIds: string[],
         torrentOptions: TorrentOptions = {}
-      ) => request('core.set_torrent_options', [torrentIds, torrentOptions]),
+      ) =>
+        request('core.set_torrent_options', [
+          torrentIds,
+          snakeCaseKeys(torrentOptions),
+        ]),
       setTorrentTrackers: (
         torrentId: string,
         trackers: { url: string; tier: string }[]
