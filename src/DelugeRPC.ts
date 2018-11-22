@@ -177,7 +177,7 @@ export default function DelugeRPC(
 
   // Expected response of alternate API
   type SentAlternate = undefined | { error: Error };
-  type ResultAlternate<T> = { error: Error } | { response: T };
+  type ResultAlternate<T> = { error: [] | {} | string } | { response: T };
 
   // TODO: See if we can return Default or Alternate response types based on function arguments
   type Sent = SentDefault | SentAlternate;
