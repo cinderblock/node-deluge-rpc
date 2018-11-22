@@ -39,7 +39,9 @@ export default function DelugeRPC(
     debug?: boolean | Function;
     protocolVersion?: 0 | 1;
     resolveErrorResponses?: boolean;
-    // Defaults to true
+    /**
+     * Default subject to change. Currently true
+     */
     camelCaseResponses?: boolean;
   } = {}
 ) {
