@@ -1,6 +1,8 @@
 'use strict';
 
 const fs = require('fs').promises;
+const snakeCaseKeys = require('snakecase-keys');
+const camelCaseKeys = require('camelcase-keys');
 
 const EventEmitter = require('events').EventEmitter;
 const pako = require('pako');
@@ -37,11 +39,29 @@ export default function DelugeRPC(
     debug?: boolean | Function;
     protocolVersion?: 0 | 1;
     resolveErrorResponses?: boolean;
+    // Defaults to true
+    camelCaseResponses?: boolean;
   } = {}
 ) {
   const debug = getDebug(options.debug);
   const protocolVersion = options.protocolVersion || 0;
   const resolveErrorResponses = options.resolveErrorResponses;
+  const camelCaseResponses =
+    options.camelCaseResponses === undefined || options.camelCaseResponses;
+
+  function parseResponse(res: ResponseType<RencodableData>) {
+    if (!camelCaseResponses) return res;
+
+    let oldResult = res.result;
+    res.result = (async () => {
+      try {
+        return camelCaseKeys(await oldResult, { deep: true });
+      } catch (e) {}
+      return oldResult;
+    })();
+
+    return res;
+  }
 
   let nextRequestId = 0;
   const resolvers: {
@@ -217,7 +237,7 @@ export default function DelugeRPC(
       });
     });
 
-    return { result, sent };
+    return parseResponse({ result, sent });
   }
 
   type FlatMap = { [x: string]: string };
@@ -274,8 +294,9 @@ export default function DelugeRPC(
         keys: string[],
         options: { diff?: boolean } = {}
       ) => request('core.get_torrents_status', [filterDict, keys], options),
-      getFilterTree: (options: { show_zero_hits?: boolean }) =>
-        request('core.get_filter_tree', options),
+      getFilterTree: (options: {
+        showZeroHits?: boolean;
+      }) => request('core.get_filter_tree', snakeCaseKeys(options)),
       getSessionState: () =>
         <ResponseType<string[]>>request('core.get_session_state'),
       getConfig: () => request('core.get_config'),
@@ -306,26 +327,26 @@ export default function DelugeRPC(
       createTorrent: (
         path: string,
         tracker: string,
-        piece_length: number,
+        pieceLength: number,
         comment: string,
         target: string,
         webseeds: [],
         priv: boolean,
-        created_by: string,
+        createdBy: string,
         trackers: FlatMap[],
-        add_to_session: boolean
+        addToSession: boolean
       ) =>
         request('core.create_torrent', [
           path,
           tracker,
-          piece_length,
+          pieceLength,
           comment,
           target,
           webseeds,
           priv,
-          created_by,
+          createdBy,
           trackers,
-          add_to_session,
+          addToSession,
         ]),
       uploadPlugin: async (filename: string, filedump: FileDump) =>
         request('core.upload_plugin', [filename, await filedump]),
