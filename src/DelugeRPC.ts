@@ -25,7 +25,7 @@ function getDebug(d: boolean | Function | undefined) {
     : () => {};
 }
 
-function DelugeRPC(
+export default function DelugeRPC(
   socket: Socket,
   options: {
     debug?: boolean | Function;
@@ -338,5 +338,3 @@ function DelugeRPC(
     },
   };
 }
-
-export default DelugeRPC;
