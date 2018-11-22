@@ -12,6 +12,7 @@
     "preversion": "yarn format",
     "postversion": "npm publish",
     "build": "tsc --declaration",
+    "clean": "rm -f src/DelugeRPC.{d.ts,js}",
     "checks": "yarn format && yarn build && yarn test",
     "prepublishOnly": "yarn build",
     "postpublish": "git push origin master --tags",
