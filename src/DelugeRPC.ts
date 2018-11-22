@@ -244,9 +244,15 @@ export default function DelugeRPC(
 
   type FlatMap = { [x: string]: string };
 
-  type FileDump = Promise<string> | string;
+  type FileDump = Promise<string> | Promise<Buffer> | string | Buffer;
 
   type TorrentOptions = FlatMap;
+
+  async function handleFiledump(dump: FileDump) {
+    const content = await dump;
+    if (content instanceof Buffer) return content.toString('base64');
+    return content;
+  }
 
   const camelCore = {
     addTorrentFile: async (
@@ -256,7 +262,7 @@ export default function DelugeRPC(
     ) =>
       request('core.add_torrent_file', [
         filename,
-        await filedump,
+        handleFiledump(filedump),
         snakeCaseKeys(torrentOptions),
       ]),
 
@@ -390,7 +396,7 @@ export default function DelugeRPC(
       ]),
 
     uploadPlugin: async (filename: string, filedump: FileDump) =>
-      request('core.upload_plugin', [filename, await filedump]),
+      request('core.upload_plugin', [filename, handleFiledump(filedump)]),
 
     rescanPlugins: () => request('core.rescan_plugins'),
     renameFiles: () => request('core.rename_files'),
