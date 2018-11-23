@@ -279,11 +279,16 @@ export default function DelugeRPC(
       // TODO: confirm this works as intended
       socket.once('error', reject);
 
-      rawSend(await allPromises([[id, method, args, kwargs]]), () => {
-        // Clean up after ourselves
+      try {
+        rawSend(await allPromises([[id, method, args, kwargs]]), () => {
+          // Clean up after ourselves
+          socket.removeListener('error', reject);
+          resolve();
+        });
+      } catch (e) {
         socket.removeListener('error', reject);
-        resolve();
-      });
+        reject(e);
+      }
     });
 
     return { result, sent };
