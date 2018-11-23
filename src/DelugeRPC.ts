@@ -233,10 +233,11 @@ export default function DelugeRPC(
     const ret: RencodableObject = {};
 
     const keys = Object.keys(<AwaitableRencodableObject>dataResolved);
-    for (let i = 0; i < keys.length; i++)
+    for (let i = 0; i < keys.length; i++) {
       ret[keys[i]] = await allPromises(
         (<AwaitableRencodableObject>dataResolved)[keys[i]]
       );
+    }
 
     return ret;
   }
