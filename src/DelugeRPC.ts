@@ -16,7 +16,6 @@ import {
   encode,
   decode,
   RencodableData,
-  RencodableArray,
   RencodableObject,
 } from 'python-rencode';
 
