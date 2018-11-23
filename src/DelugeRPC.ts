@@ -207,9 +207,12 @@ export default function DelugeRPC(
   function isObject(x: any) {
     if (typeof x !== 'object') return false;
     if (x === null) return false;
+
+    // Might as well keep these
     if (x instanceof RegExp) return false;
     if (x instanceof Error) return false;
     if (x instanceof Date) return false;
+
     return true;
   }
 
