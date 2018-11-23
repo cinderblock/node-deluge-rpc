@@ -19,7 +19,12 @@ import {
   RencodableObject,
 } from 'python-rencode';
 
-function newSize(needed: number) {
+/**
+ * Find the smallest power of 2 greater than or equal to value
+ * @param needed power of 2 lower bound
+ * @returns A power of 2 larger than or equal to the input
+ */
+function nextPowerOfTwo(needed: number) {
   return 1 << (needed - 1).toString(2).length;
 }
 
@@ -88,7 +93,7 @@ export default function DelugeRPC(
     const newLength = currentLength + buff.length;
     if (newLength > buffer.length) {
       const old = buffer;
-      buffer = Buffer.allocUnsafe(newSize(newLength));
+      buffer = Buffer.allocUnsafe(nextPowerOfTwo(newLength));
       old.copy(buffer);
     }
     buff.copy(buffer, currentLength);
