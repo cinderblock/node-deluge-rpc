@@ -54,18 +54,12 @@ export default function DelugeRPC(
   const camelCaseResponses =
     options.camelCaseResponses === undefined || options.camelCaseResponses;
 
-  function parseResponse(res: ResponseType<RencodableData>) {
-    if (!camelCaseResponses) return res;
-
-    let oldResult = res.result;
-    res.result = (async () => {
-      try {
-        return camelCaseKeys(await oldResult, { deep: true });
-      } catch (e) {}
-      return oldResult;
-    })();
-
-    return res;
+  function parseResponse(data: RencodableData) {
+    if (!camelCaseResponses) return data;
+    try {
+      return camelCaseKeys(data, { deep: true });
+    } catch (e) {}
+    return data;
   }
 
   let nextRequestId = 0;
@@ -263,7 +257,10 @@ export default function DelugeRPC(
     const id = nextRequestId++;
 
     const result = new Promise<RencodableData>((resolve, reject) => {
-      saveResolvers(id, { resolve, reject });
+      saveResolvers(id, {
+        resolve: (data: RencodableData) => resolve(parseResponse(data)),
+        reject,
+      });
     });
 
     const sent = new Promise<Sent>(async (resolve, reject) => {
@@ -278,7 +275,7 @@ export default function DelugeRPC(
       });
     });
 
-    return parseResponse({ result, sent });
+    return { result, sent };
   }
 
   type FlatMap = { [x: string]: string };
