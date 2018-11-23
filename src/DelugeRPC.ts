@@ -218,8 +218,7 @@ export default function DelugeRPC(
     const dataResolved = await data;
 
     // Even if dataResolved is a function, null, or some other non RencodableData, let something else error
-    if (typeof dataResolved != 'object' || dataResolved === null)
-      return dataResolved;
+    if (!isObject(dataResolved)) return <RencodableData>dataResolved;
 
     if (Array.isArray(dataResolved)) {
       return Promise.all(
