@@ -196,6 +196,42 @@ export default function DelugeRPC(
     socket.write(buff, cb);
   }
 
+  type Awaitable<T> = T | Promise<T>;
+  type AwaitableRencodedData =
+    | Awaitable<RencodableData>
+    | AwaitableRencodableArray
+    | AwaitableRencodableObject;
+
+  interface AwaitableRencodableObject {
+    [k: string]: AwaitableRencodedData;
+    [k: number]: AwaitableRencodedData;
+  }
+  interface AwaitableRencodableArray extends Array<AwaitableRencodedData> {}
+
+  async function allPromises(
+    data: AwaitableRencodedData
+  ): Promise<RencodableData> {
+    const dataResolved = await data;
+
+    // Even if dataResolved is a function, null, or some other non RencodableData, let something else error
+    if (typeof dataResolved != 'object' || dataResolved === null)
+      return dataResolved;
+
+    if (Array.isArray(dataResolved)) {
+      return Promise.all(
+        (<AwaitableRencodableArray>dataResolved).map(allPromises)
+      );
+    }
+
+    const ret: RencodableObject = {};
+
+    const keys = Object.keys(dataResolved);
+    for (let i = 0; i < keys.length; i++)
+      ret[keys[i]] = await allPromises(dataResolved[keys[i]]);
+
+    return ret;
+  }
+
   // Expected response of default API
   type SentDefault = undefined;
   type ResultDefault<T> = T;
@@ -215,9 +251,9 @@ export default function DelugeRPC(
   };
 
   function request(
-    method: string,
-    args: RencodableArray | RencodableObject = [],
-    kwargs: RencodableObject = {}
+    method: Awaitable<string>,
+    args: AwaitableRencodableArray | AwaitableRencodableObject = [],
+    kwargs: AwaitableRencodableObject = {}
   ): ResponseType<RencodableData> {
     if (!Array.isArray(args)) {
       kwargs = args;
@@ -230,12 +266,12 @@ export default function DelugeRPC(
       saveResolvers(id, { resolve, reject });
     });
 
-    const sent = new Promise<Sent>((resolve, reject) => {
+    const sent = new Promise<Sent>(async (resolve, reject) => {
       reject = resolveErrorResponses ? resolve : reject;
       // TODO: confirm this works as intended
       socket.once('error', reject);
 
-      rawSend([[id, method, args, kwargs]], () => {
+      rawSend(await allPromises([[id, method, args, kwargs]]), () => {
         // Clean up after ourselves
         socket.removeListener('error', reject);
         resolve();
@@ -258,14 +294,14 @@ export default function DelugeRPC(
   }
 
   const camelCore = {
-    addTorrentFile: async (
+    addTorrentFile: (
       filename: string,
       filedump: FileDump,
       torrentOptions: TorrentOptions = {}
     ) =>
       request('core.add_torrent_file', [
         filename,
-        await handleFiledump(filedump),
+        handleFiledump(filedump),
         snakeCaseKeys(torrentOptions),
       ]),
 
@@ -400,8 +436,8 @@ export default function DelugeRPC(
         addToSession,
       ]),
 
-    uploadPlugin: async (filename: string, filedump: FileDump) =>
-      request('core.upload_plugin', [filename, await handleFiledump(filedump)]),
+    uploadPlugin: (filename: string, filedump: FileDump) =>
+      request('core.upload_plugin', [filename, handleFiledump(filedump)]),
 
     rescanPlugins: () => request('core.rescan_plugins'),
     renameFiles: () => request('core.rename_files'),
