@@ -32,6 +32,19 @@ function getDebug(d: boolean | Function | undefined) {
     : () => {};
 }
 
+type Awaitable<T> = T | Promise<T>;
+export type AwaitableRencodedData =
+  | Awaitable<RencodableData>
+  | AwaitableRencodableArray
+  | AwaitableRencodableObject;
+
+export interface AwaitableRencodableObject {
+  [k: string]: AwaitableRencodedData;
+  [k: number]: AwaitableRencodedData;
+}
+export interface AwaitableRencodableArray
+  extends Array<AwaitableRencodedData> {}
+
 export async function loadFile(file: string) {
   return (<Buffer>await readFilePromise(file)).toString('base64');
 }
@@ -190,17 +203,14 @@ export default function DelugeRPC(
     socket.write(buff, cb);
   }
 
-  type Awaitable<T> = T | Promise<T>;
-  type AwaitableRencodedData =
-    | Awaitable<RencodableData>
-    | AwaitableRencodableArray
-    | AwaitableRencodableObject;
-
-  interface AwaitableRencodableObject {
-    [k: string]: AwaitableRencodedData;
-    [k: number]: AwaitableRencodedData;
+  function isObject(x: any) {
+    if (typeof x !== 'object') return false;
+    if (x === null) return false;
+    if (x instanceof RegExp) return false;
+    if (x instanceof Error) return false;
+    if (x instanceof Date) return false;
+    return true;
   }
-  interface AwaitableRencodableArray extends Array<AwaitableRencodedData> {}
 
   async function allPromises(
     data: AwaitableRencodedData
