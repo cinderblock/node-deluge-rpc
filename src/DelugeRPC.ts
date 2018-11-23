@@ -1,6 +1,6 @@
 'use strict';
 const snakeCaseKeys = require('snakecase-keys');
-const camelCaseKeys = require('camelcase-keys');
+const camelCaseKeys = require('camelcase-keys-deep');
 
 const EventEmitter = require('events').EventEmitter;
 const pako = require('pako');
