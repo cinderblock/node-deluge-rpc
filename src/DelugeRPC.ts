@@ -69,6 +69,7 @@ export default function DelugeRPC(
 
   function parseResponse(data: RencodableData) {
     if (!camelCaseResponses) return data;
+    // Try catch is easy way to handle
     try {
       return camelCaseKeys(data, { deep: true });
     } catch (e) {}
