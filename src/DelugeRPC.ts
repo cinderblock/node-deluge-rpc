@@ -285,11 +285,13 @@ export default function DelugeRPC(
     if (!isObject(dataResolved)) return <RencodableData>dataResolved;
 
     if (Array.isArray(dataResolved)) {
+      // If we're checking an array, recurse and resolve everything inside
       return Promise.all(
         (<AwaitableRencodableArray>dataResolved).map(allPromises)
       );
     }
 
+    // At this point we know we'll be returning some object
     const ret: RencodableObject = {};
 
     const keys = Object.keys(<AwaitableRencodableObject>dataResolved);
