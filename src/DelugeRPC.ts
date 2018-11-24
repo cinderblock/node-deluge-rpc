@@ -197,56 +197,60 @@ export default function DelugeRPC(
     appendToIncomingBuffer(data);
 
     // Can't do anything if the current length is too short to even hold a type marker
-    if (currentLength < 1) return;
+    while (currentLength > 0) {
+      // Extract header byte
+      const header = buffer[0];
 
-    // Extract header byte
-    const header = buffer[0];
-
-    // Detect common zlib header as format from Deluge ^1.0.0
-    if (header == 0x78) {
-      let payload;
-      try {
-        // Decode payload
-        payload = decode(
-          Buffer.from(pako.inflate(buffer.slice(0, currentLength)))
-        );
-        // Remove parsed data, only if decoding did not fail
-        removeBufferBeginning(currentLength);
-      } catch (err) {
-        // This is expected if we're receiving a large chunk of data and it got chunked by the network.
-        debug('Error inflating data. Expected for chunked large responses.');
-        debug(err);
-        return;
+      // Detect common zlib header as format from Deluge ^1.0.0
+      if (header == 0x78) {
+        let payload;
+        try {
+          // Decode payload
+          payload = decode(
+            Buffer.from(pako.inflate(buffer.slice(0, currentLength)))
+          );
+          // Remove parsed data, only if decoding did not fail
+          removeBufferBeginning(currentLength);
+        } catch (err) {
+          // This is expected if we're receiving a large chunk of data and it got chunked by the network.
+          debug('Error inflating data. Expected for chunked large responses.');
+          debug(err);
+          // Don't continue. We're waiting for more data.
+          break;
+        }
+        // Handle decoded payload
+        handlePayload(payload);
+        // Loop because we might have more data to parse
+        continue;
       }
-      // Handle decoded payload
-      handlePayload(payload);
-      return;
+
+      // Deluge ^2.0.0 (under development)
+      if (header == 1) {
+        // Next 4 bytes are payload size. Can't do much without them.
+        if (currentLength < 5) break;
+        // Read payload size.
+        const payloadLength = buffer.readInt32BE(1);
+        // Compute total packet length
+        const packetLength = 5 + payloadLength;
+        // Make sure we have all the data we need to parse.
+        if (currentLength < packetLength) break;
+
+        // Extract the payload and decode it
+        const payload = decode(
+          Buffer.from(pako.inflate(buffer.slice(5, payloadLength)))
+        );
+        // Remove parsed data
+        removeBufferBeginning(packetLength);
+        // Handle decoded payload
+        handlePayload(payload);
+        // Loop because we might have more data to parse
+        continue;
+      }
+
+      // Future version of Deluge?
+      events.emit('decodingError', 'Invalid header received:', header);
+      break;
     }
-
-    // Deluge ^2.0.0 (under development)
-    if (header == 1) {
-      // Next 4 bytes are payload size. Can't do much without them.
-      if (currentLength < 5) return;
-      // Read payload size.
-      const payloadLength = buffer.readInt32BE(1);
-      // Compute total packet length
-      const packetLength = 5 + payloadLength;
-      // Make sure we have all the data we need to parse.
-      if (currentLength < packetLength) return;
-
-      // Extract the payload and decode it
-      const payload = decode(
-        Buffer.from(pako.inflate(buffer.slice(5, payloadLength)))
-      );
-      // Remove parsed data
-      removeBufferBeginning(packetLength);
-      // Handle decoded payload
-      handlePayload(payload);
-      return;
-    }
-
-    // Future version of Deluge?
-    events.emit('decodingError', 'Invalid header received:', header);
   });
 
   /**
