@@ -124,6 +124,13 @@ export default function DelugeRPC(
   } = {};
 
   /**
+   * Generate an integer used to uniquely identify the next response to our request
+   */
+  function nextId() {
+    return nextRequestId++;
+  }
+
+  /**
    * Get the resolve/reject pair saved by their unique ID
    * @param id deluge response ID
    */
@@ -340,8 +347,8 @@ export default function DelugeRPC(
       args = [];
     }
 
-    // Generate an integer used to uniquely identify the response to our request.
-    const id = nextRequestId++;
+    // Get next response ID
+    const id = nextId();
 
     // Create the result promise that will be resolved when we receive the response from the server
     const result = new Promise<RencodableData>((resolve, reject) => {
