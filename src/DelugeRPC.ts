@@ -127,7 +127,9 @@ export default function DelugeRPC(
    * Generate an integer used to uniquely identify the next response to our request
    */
   function nextId() {
-    return nextRequestId++;
+    const ret = nextRequestId++;
+    if (nextRequestId == 1 << (8 * 4)) nextRequestId = 0;
+    return ret;
   }
 
   /**
