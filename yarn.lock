@@ -3156,6 +3156,11 @@ slash@^1.0.0:
   resolved "https://registry.yarnpkg.com/slash/-/slash-1.0.0.tgz#c41f2f6c39fc16d1cd17ad4b5d896114ae470d55"
   integrity sha1-xB8vbDn8FtHNF61LXYlhFK5HDVU=
 
+smallest-power-of-two@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/smallest-power-of-two/-/smallest-power-of-two-1.0.0.tgz#c495fe0937136c16e417de6c0678137c5a87dc3f"
+  integrity sha512-pzlw5PHgJfemXCe3j0Akm17rvvvXgY2pLqOF4gaUuaYPX8sdEe/pD5NTPP7csGqjTFTJPIzBtlHkv3OdjSFMfw==
+
 snakecase-keys@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/snakecase-keys/-/snakecase-keys-2.1.0.tgz#619833e8ff730a74eb0348eaa2f871f97bc92297"

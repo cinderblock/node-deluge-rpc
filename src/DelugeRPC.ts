@@ -10,6 +10,8 @@ import { Socket } from 'net';
 import { promisify } from 'util';
 import { readFile } from 'fs';
 
+import nextPowerOfTwo from 'smallest-power-of-two';
+
 const readFilePromise = promisify(readFile);
 
 import {
@@ -18,15 +20,6 @@ import {
   RencodableData,
   RencodableObject,
 } from 'python-rencode';
-
-/**
- * Find the smallest power of 2 greater than or equal to value
- * @param needed power of 2 lower bound
- * @returns A power of 2 larger than or equal to the input
- */
-function nextPowerOfTwo(needed: number) {
-  return 1 << (needed - 1).toString(2).length;
-}
 
 function getDebug(d: boolean | Function | undefined) {
   return typeof d == 'function'
