@@ -1,16 +1,15 @@
 'use strict';
-const snakeCaseKeys = require('snakecase-keys');
-const camelCaseKeys = require('camelcase-keys-deep');
 
-const EventEmitter = require('events').EventEmitter;
-const pako = require('pako');
-
+import { EventEmitter } from 'events';
 import { Socket } from 'net';
-
 import { promisify } from 'util';
 import { readFile } from 'fs';
 
 import nextPowerOfTwo from 'smallest-power-of-two';
+
+const camelCaseKeys = require('camelcase-keys-deep');
+const snakeCaseKeys = require('snakecase-keys');
+const pako = require('pako');
 
 const readFilePromise = promisify(readFile);
 
