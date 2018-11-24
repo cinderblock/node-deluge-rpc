@@ -210,7 +210,7 @@ export default function DelugeRPC(
         removeBufferBeginning(currentLength);
       } catch (err) {
         // This is expected if we're receiving a large chunk of data and it got chunked by the network.
-        debug('Error inflating data');
+        debug('Error inflating data. Expected for chunked large responses.');
         debug(err);
         return;
       }
