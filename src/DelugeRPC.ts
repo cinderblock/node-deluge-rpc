@@ -5,13 +5,9 @@ import { Socket } from 'net';
 import { promisify } from 'util';
 import { readFile } from 'fs';
 
-import nextPowerOfTwo from 'smallest-power-of-two';
-
 const camelCaseKeys = require('camelcase-keys-deep');
 const snakeCaseKeys = require('snakecase-keys');
 const pako = require('pako');
-
-const readFilePromise = promisify(readFile);
 
 import {
   encode,
@@ -19,6 +15,9 @@ import {
   RencodableData,
   RencodableObject,
 } from 'python-rencode';
+import nextPowerOfTwo from 'smallest-power-of-two';
+
+const readFilePromise = promisify(readFile);
 
 function getDebug(d: boolean | Function | undefined) {
   return typeof d == 'function'
