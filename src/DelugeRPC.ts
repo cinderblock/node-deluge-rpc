@@ -199,9 +199,6 @@ export default function DelugeRPC(
     // Can't do anything if the current length is too short to even hold a type marker
     if (currentLength < 1) return;
 
-    // Make a slice of the current buffer that only includes the current real data
-    const slice = buffer.slice(0, currentLength);
-
     // Extract header byte
     const header = buffer[0];
 
@@ -210,7 +207,9 @@ export default function DelugeRPC(
       let payload;
       try {
         // Decode payload
-        payload = decode(Buffer.from(pako.inflate(slice)));
+        payload = decode(
+          Buffer.from(pako.inflate(buffer.slice(0, currentLength)))
+        );
         // Remove parsed data, only if decoding did not fail
         removeBufferBeginning(currentLength);
       } catch (err) {
