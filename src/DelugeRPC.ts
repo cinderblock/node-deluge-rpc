@@ -128,7 +128,7 @@ export default function DelugeRPC(
    */
   function nextId() {
     const ret = nextRequestId++;
-    if (nextRequestId == 1 << (8 * 4)) nextRequestId = 0;
+    if (nextRequestId >= 1 << (8 * 4)) nextRequestId = 0;
     return ret;
   }
 
