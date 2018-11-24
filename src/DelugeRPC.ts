@@ -44,64 +44,100 @@ export async function loadFile(file: string) {
   return (<Buffer>await readFilePromise(file)).toString('base64');
 }
 
+/**
+ * Create an API attached to a specified socket
+ *
+ * @param socket Some extension of net.Socket
+ * @param options hash of options for this connection
+ * @returns A set of functions that match Deluge's API
+ */
 export default function DelugeRPC(
   socket: Socket,
   options: {
+    /**
+     * A function to call for debug events.
+     * True makes a generic one that prints to terminal.
+     * False does nothing
+     */
     debug?: boolean | Function;
+    /**
+     * Which Deluge protocol should we use
+     *
+     * Deluge ^1.0.0 uses version 0 (default)
+     * Deluge ^2.0.0 uses version 1
+     */
     protocolVersion?: 0 | 1;
+    /**
+     * Changes the behavior of the returned promises.
+     *
+     * If true, promises will never throw.
+     * All functions return an object that has one of error or response set as appropriate
+     */
     resolveErrorResponses?: boolean;
     /**
+     * Convert all responses from Deluge to camelCase
+     *
      * Default subject to change. Currently true
      */
     camelCaseResponses?: boolean;
   } = {}
 ) {
+  // Setup debug function
   const debug = getDebug(options.debug);
+  // Default protocol version 0
   const protocolVersion = options.protocolVersion || 0;
+  // Default false-ish
   const resolveErrorResponses = options.resolveErrorResponses;
+  // Default true
   const camelCaseResponses =
     options.camelCaseResponses === undefined || options.camelCaseResponses;
 
-  function parseResponse(data: RencodableData) {
-    if (!camelCaseResponses) return data;
-    // Try catch is easy way to handle
-    try {
-      return camelCaseKeys(data, { deep: true });
-    } catch (e) {}
-    return data;
-  }
-
-  let nextRequestId = 0;
-  const resolvers: {
-    [x: number]: { reject: Function; resolve: Function };
-  } = {};
+  // Internal receive buffer I n case multi-part messages are received.
   let buffer = Buffer.allocUnsafe(0);
   let currentLength = 0;
 
-  const events = new EventEmitter();
-
+  // When we get new data from the network, we need an easy way to append to the current buffer
   function appendToIncomingBuffer(buff: Buffer) {
     const newLength = currentLength + buff.length;
+    // If there is not enough space in the current buffer to hold all the data we're receiving, make it bigger
     if (newLength > buffer.length) {
       const old = buffer;
       buffer = Buffer.allocUnsafe(nextPowerOfTwo(newLength));
       old.copy(buffer);
     }
+    // Copy the new data onto current buffer at current length
     buff.copy(buffer, currentLength);
     currentLength = newLength;
   }
 
+  // Once we process some data, we need a way to remove it from the current buffer
   function removeBufferBeginning(size: number) {
     buffer.copy(buffer, 0, size, currentLength);
     currentLength -= size;
   }
 
+  // Request/Response pairs to and from Deluge are matched with an integer index
+  let nextRequestId = 0;
+  // Buffer of pending response handlers
+  const resolvers: {
+    [x: number]: { reject: Function; resolve: Function };
+  } = {};
+
+  /**
+   * Get the resolve/reject pair saved by their unique ID
+   * @param id deluge response ID
+   */
   function getResolvers(id: number) {
     const ret = resolvers[id];
     delete resolvers[id];
     return ret;
   }
 
+  /**
+   * Save a new resolve/reject pair to the store
+   * @param id deluge response ID
+   * @param p reject/resolve pair
+   */
   function saveResolvers(
     id: number,
     p: { reject: Function; resolve: Function }
@@ -118,6 +154,14 @@ export default function DelugeRPC(
         };
   }
 
+  // Event emitter to pass on asynchronous events (among others)
+  const events = new EventEmitter();
+
+  /**
+   * Detect message and payload type and route it appropriately
+   *
+   * @param payload Decoded payload from server
+   */
   function handlePayload(payload: RencodableData) {
     const RESPONSE = 1;
     const ERROR = 2;
@@ -139,9 +183,11 @@ export default function DelugeRPC(
     }
   }
 
+  // When we get some data from the socket connection to the server
   socket.on('data', data => {
     appendToIncomingBuffer(data);
 
+    // Can't do anything if the current length is too short
     if (currentLength < 1) return;
 
     const header = buffer[0];
@@ -182,10 +228,17 @@ export default function DelugeRPC(
     events.emit('decodingError', 'Invalid header received:', header);
   });
 
+  /**
+   * Encode and send data via the Socket in a format that Deluge expects
+   *
+   * @param data Encodable data to be sent
+   * @param cb Callback to call when data actually sent
+   */
   function rawSend(data: RencodableData, cb: Function) {
     let buff = pako.deflate(encode(data));
 
     if (protocolVersion == 0) {
+      // Don't need to do anything
     } else if (protocolVersion == 1) {
       // TODO: Test this with deluge dev version
       const header = Buffer.allocUnsafe(5);
@@ -196,9 +249,11 @@ export default function DelugeRPC(
       throw Error('Unknown protocol version!');
     }
 
+    // Low level socket write
     socket.write(buff, cb);
   }
 
+  // Check if data is an object we want to parse
   function isObject(x: any) {
     if (typeof x !== 'object') return false;
     if (x === null) return false;
@@ -211,6 +266,7 @@ export default function DelugeRPC(
     return true;
   }
 
+  // Resolve all Promises deeply in objects or arrays
   async function allPromises(
     data: AwaitableRencodedData
   ): Promise<RencodableData> {
@@ -255,18 +311,39 @@ export default function DelugeRPC(
     sent: Promise<Sent>;
   };
 
+  // Handle a response. cameCase it if needed and possible
+  function parseResponse(data: RencodableData) {
+    if (!camelCaseResponses) return data;
+    // Try catch is easy way to handle
+    try {
+      return camelCaseKeys(data, { deep: true });
+    } catch (e) {}
+    return data;
+  }
+
+  /**
+   * Encode and send a Deluge RPC message with Promised responses
+   *
+   * @param method Deluge RPC method name
+   * @param args Any arguments to be passed to the RPC method
+   * @param kwargs Any named arguments to be passed to the RPC method
+   * @returns An object with two Promises. One for if the data was sent on the wire. The second if the response has been received.
+   */
   function request(
     method: Awaitable<string>,
     args: AwaitableRencodableArray | AwaitableRencodableObject = [],
     kwargs: AwaitableRencodableObject = {}
   ): ResponseType<RencodableData> {
+    // Handle only named arguments
     if (!Array.isArray(args)) {
       kwargs = args;
       args = [];
     }
 
+    // Generate an integer used to uniquely identify the response to our request.
     const id = nextRequestId++;
 
+    // Create the result promise that will be resolved when we receive the response from the server
     const result = new Promise<RencodableData>((resolve, reject) => {
       saveResolvers(id, {
         resolve: (data: RencodableData) => resolve(parseResponse(data)),
@@ -274,7 +351,9 @@ export default function DelugeRPC(
       });
     });
 
+    // Create the sent promise that will be resolved when the message is sent on the wire.
     const sent = new Promise<Sent>(async (resolve, reject) => {
+      // Handle alternate API
       reject = resolveErrorResponses ? resolve : reject;
       // TODO: confirm this works as intended
       socket.once('error', reject);
@@ -286,6 +365,7 @@ export default function DelugeRPC(
           resolve();
         });
       } catch (e) {
+        // Probably an error resolving all of the passed arguments
         socket.removeListener('error', reject);
         reject(e);
       }
@@ -300,12 +380,19 @@ export default function DelugeRPC(
 
   type TorrentOptions = FlatMap;
 
+  /**
+   * Helper function to convert a Buffer to a base64 encoded string as Deluge expects it.
+   *
+   * @param dump Buffer of file (or base64 encoded string)
+   * @returns Promised bas64 string
+   */
   async function handleFiledump(dump: FileDump) {
     const content = await dump;
     if (content instanceof Buffer) return content.toString('base64');
     return content;
   }
 
+  // Main API
   const camelCore = {
     addTorrentFile: (
       filename: string,
@@ -472,8 +559,8 @@ export default function DelugeRPC(
       request('daemon.login', [username, password]),
   };
 
+  // Final API with camelCase or snake_case
   // We could do this more programmatically but this help tsc more
-
   const core = {
     add_torrent_file: camelCore.addTorrentFile,
     addTorrentFile: camelCore.addTorrentFile,
@@ -563,7 +650,6 @@ export default function DelugeRPC(
     get_libtorrent_version: camelCore.getLibtorrentVersion,
     getLibtorrentVersion: camelCore.getLibtorrentVersion,
   };
-
   const daemon = {
     get_method_list: camelDaemon.getMethodList,
     getMethodList: camelDaemon.getMethodList,
