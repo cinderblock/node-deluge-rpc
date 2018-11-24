@@ -196,17 +196,22 @@ export default function DelugeRPC(
   socket.on('data', data => {
     appendToIncomingBuffer(data);
 
-    // Can't do anything if the current length is too short
+    // Can't do anything if the current length is too short to even hold a type marker
     if (currentLength < 1) return;
 
-    const header = buffer[0];
+    // Make a slice of the current buffer that only includes the current real data
     const slice = buffer.slice(0, currentLength);
 
+    // Extract header byte
+    const header = buffer[0];
+
+    // Detect common zlib header as format from Deluge ^1.0.0
     if (header == 0x78) {
-      // Detect common zlib header as format from Deluge ^1.0.0
       let payload;
       try {
+        // Decode payload
         payload = decode(Buffer.from(pako.inflate(slice)));
+        // Remove parsed data, only if decoding did not fail
         removeBufferBeginning(currentLength);
       } catch (err) {
         // This is expected if we're receiving a large chunk of data and it got chunked by the network.
@@ -214,26 +219,34 @@ export default function DelugeRPC(
         debug(err);
         return;
       }
+      // Handle decoded payload
       handlePayload(payload);
       return;
     }
 
+    // Deluge ^2.0.0 (under development)
     if (header == 1) {
-      // Deluge ^2.0.0 (under development)
+      // Next 4 bytes are payload size. Can't do much without them.
       if (currentLength < 5) return;
+      // Read payload size.
       const payloadLength = buffer.readInt32BE(1);
+      // Compute total packet length
       const packetLength = 5 + payloadLength;
+      // Make sure we have all the data we need to parse.
       if (currentLength < packetLength) return;
 
-      // Copy the payload from the working buffer
+      // Extract the payload and decode it
       const payload = decode(
         Buffer.from(pako.inflate(buffer.slice(5, payloadLength)))
       );
+      // Remove parsed data
       removeBufferBeginning(packetLength);
+      // Handle decoded payload
       handlePayload(payload);
       return;
     }
 
+    // Future version of Deluge?
     events.emit('decodingError', 'Invalid header received:', header);
   });
 
@@ -244,17 +257,22 @@ export default function DelugeRPC(
    * @param cb Callback to call when data actually sent
    */
   function rawSend(data: RencodableData, cb: Function) {
+    // Encode the data as Deluge expects
     let buff = pako.deflate(encode(data));
 
     if (protocolVersion == 0) {
-      // Don't need to do anything
+      // Don't need to do anything. Just raw send encoded buffer.
     } else if (protocolVersion == 1) {
       // TODO: Test this with deluge dev version
       const header = Buffer.allocUnsafe(5);
+      // Add protocol version header
       header.writeUInt8(protocolVersion, 0);
+      // And payload length
       header.writeUInt32BE(buff.length, 1);
+      // Join the two
       buff = Buffer.concat([header, buff]);
     } else {
+      // Trying to use future version?
       throw Error('Unknown protocol version!');
     }
 
@@ -275,10 +293,11 @@ export default function DelugeRPC(
     return true;
   }
 
-  // Resolve all Promises deeply in objects or arrays
+  // Resolve when all Promises deeply in objects or arrays resolve
   async function allPromises(
     data: AwaitableRencodedData
   ): Promise<RencodableData> {
+    // Resolve any promise or get raw data
     const dataResolved = await data;
 
     // Even if dataResolved is a function, null, or some other non RencodableData, let something else error
