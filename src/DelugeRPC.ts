@@ -367,12 +367,6 @@ export default function DelugeRPC(
     args: AwaitableRencodableArray | AwaitableRencodableObject = [],
     kwargs: AwaitableRencodableObject = {}
   ): ResponseType<RencodableData> {
-    // Handle only named arguments
-    if (!Array.isArray(args)) {
-      kwargs = args;
-      args = [];
-    }
-
     // Get next response ID
     const id = nextId();
 
@@ -391,8 +385,18 @@ export default function DelugeRPC(
       // TODO: confirm this works as intended
       socket.once('error', reject);
 
+      let argsRes = (await allPromises(args)) || [];
+      let kwargsRes = (await allPromises(kwargs)) || {};
+      const methodRes = await allPromises(method);
+
+      // Handle calls with no list arguments
+      if (!Array.isArray(argsRes)) {
+        kwargsRes = argsRes;
+        argsRes = [];
+      }
+
       try {
-        rawSend(await allPromises([[id, method, args, kwargs]]), () => {
+        rawSend([[id, methodRes, argsRes, kwargsRes]], () => {
           // Clean up after ourselves
           socket.removeListener('error', reject);
           resolve();
