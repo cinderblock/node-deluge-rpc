@@ -59,6 +59,15 @@ result.then(({ error, response }) => {
 });
 ```
 
+### Arguments
+
+All arguments to API functions at any depth can be Promises.
+
+#### camelCase vs snake_case
+
+All of Deluge's arguments are snake_case.
+Any named arguments will be converted to Deluge's snake_keys convention.
+
 ## Development
 
 ```bash
