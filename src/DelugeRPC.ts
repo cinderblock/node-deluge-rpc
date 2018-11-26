@@ -14,6 +14,7 @@ import {
   decode,
   RencodableData,
   RencodableObject,
+  RencodableArray,
 } from 'python-rencode';
 import nextPowerOfTwo from 'smallest-power-of-two';
 
@@ -28,17 +29,17 @@ function getDebug(d: boolean | Function | undefined) {
 }
 
 type Awaitable<T> = T | Promise<T>;
-export type AwaitableRencodedData =
+export type AwaitableRencodableData =
   | Awaitable<RencodableData>
-  | AwaitableRencodableArray
-  | AwaitableRencodableObject;
+  | ArrayAwaitableRencodable
+  | ObjectAwaitableRencodable;
 
-export interface AwaitableRencodableObject {
-  [k: string]: AwaitableRencodedData;
-  [k: number]: AwaitableRencodedData;
+export interface ObjectAwaitableRencodable {
+  [k: string]: AwaitableRencodableData;
+  [k: number]: AwaitableRencodableData;
 }
-export interface AwaitableRencodableArray
-  extends Array<AwaitableRencodedData> {}
+export interface ArrayAwaitableRencodable
+  extends Array<AwaitableRencodableData> {}
 
 export async function loadFile(file: string) {
   return (<Buffer>await readFilePromise(file)).toString('base64');
@@ -298,7 +299,7 @@ export default function DelugeRPC(
 
   // Resolve when all Promises deeply in objects or arrays resolve
   async function allPromises(
-    data: AwaitableRencodedData
+    data: AwaitableRencodableData
   ): Promise<RencodableData> {
     // Resolve any promise or get raw data
     const dataResolved = await data;
@@ -309,17 +310,17 @@ export default function DelugeRPC(
     if (Array.isArray(dataResolved)) {
       // If we're checking an array, recurse and resolve everything inside
       return Promise.all(
-        (<AwaitableRencodableArray>dataResolved).map(allPromises)
+        (<ArrayAwaitableRencodable>dataResolved).map(allPromises)
       );
     }
 
     // At this point we know we'll be returning some object
     const ret: RencodableObject = {};
 
-    const keys = Object.keys(<AwaitableRencodableObject>dataResolved);
+    const keys = Object.keys(<ObjectAwaitableRencodable>dataResolved);
     for (let i = 0; i < keys.length; i++) {
       ret[keys[i]] = await allPromises(
-        (<AwaitableRencodableObject>dataResolved)[keys[i]]
+        (<ObjectAwaitableRencodable>dataResolved)[keys[i]]
       );
     }
 
@@ -364,8 +365,11 @@ export default function DelugeRPC(
    */
   function request(
     method: Awaitable<string>,
-    args: AwaitableRencodableArray | AwaitableRencodableObject = [],
-    kwargs: AwaitableRencodableObject = {}
+    args:
+      | ArrayAwaitableRencodable
+      | ObjectAwaitableRencodable
+      | Awaitable<undefined> = [],
+    kwargs: ObjectAwaitableRencodable | Awaitable<undefined> = {}
   ): ResponseType<RencodableData> {
     // Get next response ID
     const id = nextId();
@@ -412,8 +416,9 @@ export default function DelugeRPC(
   }
 
   type FlatMap = { [x: string]: string };
+  type AwaitableFlatMap = Awaitable<{ [x: string]: Awaitable<string> }>;
 
-  type FileDump = Promise<string> | Promise<Buffer> | string | Buffer;
+  type FileDump = string | Buffer;
 
   type TorrentOptions = FlatMap;
 
@@ -423,58 +428,87 @@ export default function DelugeRPC(
    * @param dump Buffer of file (or base64 encoded string)
    * @returns Promised base64 string
    */
-  async function handleFiledump(dump: FileDump) {
+  async function handleFiledump(dump: Awaitable<FileDump>) {
     const content = await dump;
     if (content instanceof Buffer) return content.toString('base64');
     return content;
   }
 
+  async function handleOptions(options: AwaitableRencodableData) {
+    const opts = await allPromises(options);
+    if (typeof opts != 'object' || opts === null) return opts;
+    return <RencodableObject | RencodableArray>(
+      snakeCaseKeys(opts, { deep: true })
+    );
+  }
+
   // Main API
   const camelCore = {
     addTorrentFile: (
-      filename: string,
-      filedump: FileDump,
-      torrentOptions: TorrentOptions = {}
+      filename: Awaitable<string>,
+      filedump: Awaitable<FileDump>,
+      torrentOptions: Awaitable<TorrentOptions | undefined>
     ) =>
       request('core.add_torrent_file', [
         filename,
         handleFiledump(filedump),
-        snakeCaseKeys(torrentOptions),
+        handleOptions(torrentOptions),
       ]),
 
     addTorrentUrl: (
-      url: string,
-      torrentOptions: TorrentOptions = {},
-      options: { headers?: FlatMap } = {}
+      url: Awaitable<string>,
+      torrentOptions: Awaitable<TorrentOptions | undefined>,
+      options: Awaitable<{ headers?: Awaitable<FlatMap> } | undefined>
     ) =>
       request(
         'core.add_torrent_url',
-        [url, snakeCaseKeys(torrentOptions)],
-        options
+        [url, handleOptions(torrentOptions)],
+        handleOptions(options as AwaitableRencodableData) as
+          | ObjectAwaitableRencodable
+          | Awaitable<undefined>
       ),
 
-    addTorrentMagnet: (uri: string, torrentOptions: TorrentOptions = {}) =>
-      request('core.add_torrent_magnet', [uri, snakeCaseKeys(torrentOptions)]),
+    addTorrentMagnet: (
+      uri: Awaitable<string>,
+      torrentOptions: Awaitable<TorrentOptions | undefined>
+    ) =>
+      request('core.add_torrent_magnet', [uri, handleOptions(torrentOptions)]),
 
-    removeTorrent: (torrentId: string, removeData: boolean) =>
+    removeTorrent: (
+      torrentId: Awaitable<string>,
+      removeData: Awaitable<boolean>
+    ) =>
       request('core.remove_torrent', [torrentId, removeData]),
 
-    getSessionStatus: (keys: string[]) =>
-      request('core.get_session_status', [keys]),
+    getSessionStatus: (keys: Awaitable<Awaitable<string>[]>) =>
+      request('core.get_session_status', [keys] as ArrayAwaitableRencodable),
 
     getCacheStatus: () => request('core.get_cache_status'),
 
-    forceReannounce: (torrentIds: string[]) =>
-      request('core.force_reannounce', [torrentIds]),
+    forceReannounce: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      request('core.force_reannounce', [
+        torrentIds,
+      ] as ArrayAwaitableRencodable),
 
-    pauseTorrent: (torrentIds: string[]) =>
-      request('core.pause_torrent', [torrentIds]),
+    pauseTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      request('core.pause_torrent', [torrentIds] as ArrayAwaitableRencodable),
 
-    connectPeer: (torrentId: string, ip: string, port: number) =>
+    connectPeer: (
+      torrentId: Awaitable<string>,
+      ip: Awaitable<string>,
+      port: Awaitable<number>
+    ) =>
+      // TODO: Return type
       request('core.connect_peer', [torrentId, ip, port]),
 
-    moveStorage: (torrentIds: string[], dest: string) =>
-      request('core.move_storage', [torrentIds, dest]),
+    moveStorage: (
+      torrentIds: Awaitable<Awaitable<string>[]>,
+      dest: Awaitable<string>
+    ) =>
+      request('core.move_storage', [
+        torrentIds,
+        dest,
+      ] as ArrayAwaitableRencodable),
 
     pauseAllTorrents: () =>
       <ResponseType<undefined>>request('core.pause_all_torrents'),
@@ -482,83 +516,109 @@ export default function DelugeRPC(
     resumeAllTorrents: () =>
       <ResponseType<undefined>>request('core.resume_all_torrents'),
 
-    resumeTorrent: (torrentIds: string[]) =>
-      request('core.resume_torrent', [torrentIds]),
+    resumeTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      request('core.resume_torrent', [torrentIds] as ArrayAwaitableRencodable),
 
     getTorrentStatus: (
-      torrentId: string,
-      keys: string[],
-      options: { diff?: boolean } = {}
-    ) => request('core.get_torrent_status', [torrentId, keys], options),
+      torrentId: Awaitable<string>,
+      keys: Awaitable<Awaitable<string>[]>,
+      options: Awaitable<{ diff?: Awaitable<boolean> }>
+    ) =>
+      request(
+        'core.get_torrent_status',
+        [torrentId, keys] as ArrayAwaitableRencodable,
+        handleOptions(options as AwaitableRencodableData) as
+          | ObjectAwaitableRencodable
+          | Awaitable<undefined>
+      ),
 
     getTorrentsStatus: (
-      filterDict: FlatMap,
-      keys: string[],
-      options: { diff?: boolean } = {}
-    ) => request('core.get_torrents_status', [filterDict, keys], options),
+      filterDict: Awaitable<FlatMap>,
+      keys: Awaitable<Awaitable<string>[]>,
+      options: Awaitable<{ diff?: Awaitable<boolean> }>
+    ) =>
+      request(
+        'core.get_torrents_status',
+        [filterDict, keys] as ArrayAwaitableRencodable,
+        handleOptions(options as AwaitableRencodableData) as
+          | ObjectAwaitableRencodable
+          | Awaitable<undefined>
+      ),
 
-    getFilterTree: (options: { showZeroHits?: boolean; hideCats?: string[] }) =>
-      request('core.get_filter_tree', snakeCaseKeys(options)),
+    getFilterTree: (options: {
+      showZeroHits?: Awaitable<boolean>;
+      hideCats?: Awaitable<Awaitable<string>[]>;
+    }) =>
+      request('core.get_filter_tree', handleOptions(
+        options as AwaitableRencodableData
+      ) as ObjectAwaitableRencodable | Awaitable<undefined>),
 
     getSessionState: () =>
-      <ResponseType<string[]>>request('core.get_session_state'),
+      request('core.get_session_state') as ResponseType<string[]>,
 
     getConfig: () => request('core.get_config'),
 
-    getConfigValue: (key: string) => request('core.get_config_value', [key]),
+    getConfigValue: (key: Awaitable<string>) =>
+      request('core.get_config_value', [key]),
 
-    getConfigValues: (keys: string[]) =>
-      request('core.get_config_values', [keys]),
+    getConfigValues: (keys: Awaitable<Awaitable<string>[]>) =>
+      request('core.get_config_values', [keys] as ArrayAwaitableRencodable),
 
-    setConfig: (config: FlatMap) => request('core.set_config', [config]),
+    setConfig: (config: Awaitable<FlatMap>) =>
+      request('core.set_config', [config]),
 
-    getListenPort: () => <ResponseType<number>>request('core.get_listen_port'),
+    getListenPort: () =>
+      request('core.get_listen_port') as ResponseType<number>,
 
     getNumConnections: () =>
-      <ResponseType<number>>request('core.get_num_connections'),
+      request('core.get_num_connections') as ResponseType<number>,
 
     getAvailablePlugins: () =>
-      <ResponseType<string[]>>request('core.get_available_plugins'),
+      request('core.get_available_plugins') as ResponseType<string[]>,
 
     getEnabledPlugins: () =>
-      <ResponseType<string[]>>request('core.get_enabled_plugins'),
+      request('core.get_enabled_plugins') as ResponseType<string[]>,
 
-    enablePlugin: (plugin: string) =>
-      <ResponseType<boolean>>request('core.enable_plugin', [plugin]),
+    enablePlugin: (plugin: Awaitable<string>) =>
+      request('core.enable_plugin', [plugin]) as ResponseType<boolean>,
 
-    disablePlugin: (plugin: string) =>
-      <ResponseType<boolean>>request('core.disable_plugin', [plugin]),
+    disablePlugin: (plugin: Awaitable<string>) =>
+      request('core.disable_plugin', [plugin]) as ResponseType<boolean>,
 
-    forceRecheck: (torrentIds: string[]) =>
-      <ResponseType<boolean>>request('core.force_recheck', [torrentIds]),
+    forceRecheck: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      request('core.force_recheck', [
+        torrentIds,
+      ] as ArrayAwaitableRencodable) as ResponseType<boolean>,
 
     setTorrentOptions: (
-      torrentIds: string[],
-      torrentOptions: TorrentOptions = {}
+      torrentIds: Awaitable<Awaitable<string>[]>,
+      torrentOptions: Awaitable<TorrentOptions | undefined>
     ) =>
       request('core.set_torrent_options', [
         torrentIds,
-        snakeCaseKeys(torrentOptions),
-      ]),
+        handleOptions(torrentOptions),
+      ] as ArrayAwaitableRencodable),
 
     setTorrentTrackers: (
-      torrentId: string,
-      trackers: { url: string; tier: string }[]
-    ) => request('core.set_torrent_trackers', [torrentId, trackers]),
+      torrentId: Awaitable<string>,
+      trackers: { url: Awaitable<string>; tier: Awaitable<string> }[]
+    ) =>
+      request('core.set_torrent_trackers', [torrentId, trackers]),
 
-    getPathSize: (path: string) => request('core.get_path_size', [path]),
+    getPathSize: (path: Awaitable<string>) =>
+      request('core.get_path_size', [path]),
 
     createTorrent: (
-      path: string,
-      tracker: string,
-      pieceLength: number,
-      comment: string,
-      target: string,
-      webseeds: [],
-      priv: boolean,
-      createdBy: string,
-      trackers: FlatMap[],
-      addToSession: boolean
+      path: Awaitable<string>,
+      tracker: Awaitable<string>,
+      pieceLength: Awaitable<number>,
+      comment: Awaitable<string>,
+      target: Awaitable<string>,
+      webseeds: Awaitable<ArrayAwaitableRencodable>,
+      priv: Awaitable<boolean>,
+      createdBy: Awaitable<string>,
+      trackers: AwaitableFlatMap,
+      addToSession: Awaitable<boolean>
     ) =>
       request('core.create_torrent', [
         path,
@@ -571,9 +631,12 @@ export default function DelugeRPC(
         createdBy,
         trackers,
         addToSession,
-      ]),
+      ] as ArrayAwaitableRencodable),
 
-    uploadPlugin: (filename: string, filedump: FileDump) =>
+    uploadPlugin: (
+      filename: Awaitable<string>,
+      filedump: Awaitable<FileDump>
+    ) =>
       request('core.upload_plugin', [filename, handleFiledump(filedump)]),
 
     rescanPlugins: () => request('core.rescan_plugins'),
@@ -592,7 +655,7 @@ export default function DelugeRPC(
     getMethodList: () => request('daemon.get_method_list'),
     info: () => request('daemon.info'),
     shutdown: () => request('daemon.shutdown'),
-    login: (username: string, password: string) =>
+    login: (username: Awaitable<string>, password: Awaitable<string>) =>
       request('daemon.login', [username, password]),
   };
 
