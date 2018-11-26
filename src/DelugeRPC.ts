@@ -386,6 +386,10 @@ export default function DelugeRPC(
     const sent = new Promise<Sent>(async (resolve, reject) => {
       // Handle alternate API
       reject = resolveErrorResponses ? resolve : reject;
+
+      // DEBATE: Should we also reject our result?
+      // reject = (...args) => {getResolvers(id).reject(...args); reject(...args);};
+
       // TODO: confirm this works as intended
       socket.once('error', reject);
 
