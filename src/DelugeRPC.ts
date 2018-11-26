@@ -449,6 +449,7 @@ export default function DelugeRPC(
       filedump: Awaitable<FileDump>,
       torrentOptions: Awaitable<TorrentOptions | undefined>
     ) =>
+      // TODO: Return type
       request('core.add_torrent_file', [
         filename,
         handleFiledump(filedump),
@@ -460,6 +461,7 @@ export default function DelugeRPC(
       torrentOptions: Awaitable<TorrentOptions | undefined>,
       options: Awaitable<{ headers?: Awaitable<FlatMap> } | undefined>
     ) =>
+      // TODO: Return type
       request(
         'core.add_torrent_url',
         [url, handleOptions(torrentOptions)],
@@ -472,25 +474,31 @@ export default function DelugeRPC(
       uri: Awaitable<string>,
       torrentOptions: Awaitable<TorrentOptions | undefined>
     ) =>
+      // TODO: Return type
       request('core.add_torrent_magnet', [uri, handleOptions(torrentOptions)]),
 
     removeTorrent: (
       torrentId: Awaitable<string>,
       removeData: Awaitable<boolean>
     ) =>
+      // TODO: Return type
       request('core.remove_torrent', [torrentId, removeData]),
 
     getSessionStatus: (keys: Awaitable<Awaitable<string>[]>) =>
+      // TODO: Return type
       request('core.get_session_status', [keys] as ArrayAwaitableRencodable),
 
+    // TODO: Return type
     getCacheStatus: () => request('core.get_cache_status'),
 
     forceReannounce: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      // TODO: Return type
       request('core.force_reannounce', [
         torrentIds,
       ] as ArrayAwaitableRencodable),
 
     pauseTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      // TODO: Return type
       request('core.pause_torrent', [torrentIds] as ArrayAwaitableRencodable),
 
     connectPeer: (
@@ -505,18 +513,22 @@ export default function DelugeRPC(
       torrentIds: Awaitable<Awaitable<string>[]>,
       dest: Awaitable<string>
     ) =>
+      // TODO: Return type
       request('core.move_storage', [
         torrentIds,
         dest,
       ] as ArrayAwaitableRencodable),
 
     pauseAllTorrents: () =>
+      // TODO: Return type
       <ResponseType<undefined>>request('core.pause_all_torrents'),
 
     resumeAllTorrents: () =>
+      // TODO: Return type
       <ResponseType<undefined>>request('core.resume_all_torrents'),
 
     resumeTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
+      // TODO: Return type
       request('core.resume_torrent', [torrentIds] as ArrayAwaitableRencodable),
 
     getTorrentStatus: (
@@ -524,6 +536,7 @@ export default function DelugeRPC(
       keys: Awaitable<Awaitable<string>[]>,
       options: Awaitable<{ diff?: Awaitable<boolean> }>
     ) =>
+      // TODO: Return type
       request(
         'core.get_torrent_status',
         [torrentId, keys] as ArrayAwaitableRencodable,
@@ -532,6 +545,7 @@ export default function DelugeRPC(
           | Awaitable<undefined>
       ),
 
+    // TODO: Return type
     getTorrentsStatus: (
       filterDict: Awaitable<FlatMap>,
       keys: Awaitable<Awaitable<string>[]>,
@@ -549,6 +563,7 @@ export default function DelugeRPC(
       showZeroHits?: Awaitable<boolean>;
       hideCats?: Awaitable<Awaitable<string>[]>;
     }) =>
+      // TODO: Return type
       request('core.get_filter_tree', handleOptions(
         options as AwaitableRencodableData
       ) as ObjectAwaitableRencodable | Awaitable<undefined>),
@@ -556,15 +571,19 @@ export default function DelugeRPC(
     getSessionState: () =>
       request('core.get_session_state') as ResponseType<string[]>,
 
+    // TODO: Return type
     getConfig: () => request('core.get_config'),
 
     getConfigValue: (key: Awaitable<string>) =>
+      // TODO: Return type
       request('core.get_config_value', [key]),
 
     getConfigValues: (keys: Awaitable<Awaitable<string>[]>) =>
+      // TODO: Return type
       request('core.get_config_values', [keys] as ArrayAwaitableRencodable),
 
     setConfig: (config: Awaitable<FlatMap>) =>
+      // TODO: Return type
       request('core.set_config', [config]),
 
     getListenPort: () =>
@@ -594,6 +613,7 @@ export default function DelugeRPC(
       torrentIds: Awaitable<Awaitable<string>[]>,
       torrentOptions: Awaitable<TorrentOptions | undefined>
     ) =>
+      // TODO: Return type
       request('core.set_torrent_options', [
         torrentIds,
         handleOptions(torrentOptions),
@@ -603,9 +623,11 @@ export default function DelugeRPC(
       torrentId: Awaitable<string>,
       trackers: { url: Awaitable<string>; tier: Awaitable<string> }[]
     ) =>
+      // TODO: Return type
       request('core.set_torrent_trackers', [torrentId, trackers]),
 
     getPathSize: (path: Awaitable<string>) =>
+      // TODO: Return type
       request('core.get_path_size', [path]),
 
     createTorrent: (
@@ -614,12 +636,15 @@ export default function DelugeRPC(
       pieceLength: Awaitable<number>,
       comment: Awaitable<string>,
       target: Awaitable<string>,
+      // TODO: Check type
       webseeds: Awaitable<ArrayAwaitableRencodable>,
       priv: Awaitable<boolean>,
       createdBy: Awaitable<string>,
+      // TODO: Check type
       trackers: AwaitableFlatMap,
       addToSession: Awaitable<boolean>
     ) =>
+      // TODO: Return type
       request('core.create_torrent', [
         path,
         tracker,
@@ -637,7 +662,10 @@ export default function DelugeRPC(
       filename: Awaitable<string>,
       filedump: Awaitable<FileDump>
     ) =>
+      // TODO: Return type
       request('core.upload_plugin', [filename, handleFiledump(filedump)]),
+
+    // TODO: Return types
 
     rescanPlugins: () => request('core.rescan_plugins'),
     renameFiles: () => request('core.rename_files'),
@@ -652,6 +680,8 @@ export default function DelugeRPC(
     getLibtorrentVersion: () => request('core.get_libtorrent_version'),
   };
   const camelDaemon = {
+    // TODO: Return types
+
     getMethodList: () => request('daemon.get_method_list'),
     info: () => request('daemon.info'),
     shutdown: () => request('daemon.shutdown'),
