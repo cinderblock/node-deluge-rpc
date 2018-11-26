@@ -421,7 +421,7 @@ export default function DelugeRPC(
    * Helper function to convert a Buffer to a base64 encoded string as Deluge expects it.
    *
    * @param dump Buffer of file (or base64 encoded string)
-   * @returns Promised bas64 string
+   * @returns Promised base64 string
    */
   async function handleFiledump(dump: FileDump) {
     const content = await dump;
