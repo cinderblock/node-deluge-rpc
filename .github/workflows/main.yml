@@ -36,7 +36,7 @@ jobs:
         run: yarn install
 
       - name: Prettier
-        run: yarn format-check
+        run: yarn format --check
 
   check-spelling:
     name: Check - Spelling
