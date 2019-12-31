@@ -69,12 +69,12 @@ jobs:
         run: sudo apt-get install -y deluged
 
       - name: Listening ports
-        run: sudo netstat -lpn
+        run: sudo netstat -lpnt
 
       - run: sleep 5
 
       - name: Listening ports
-        run: sudo netstat -lpn
+        run: sudo netstat -lpnt
 
       - name: Build
         run: yarn install
