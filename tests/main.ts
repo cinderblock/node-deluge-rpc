@@ -1,6 +1,7 @@
 import tls from 'tls';
 
-import DelugeRPC from '..';
+// import DelugeRPC from '..';
+import DelugeRPC from '../src/DelugeRPC.js';
 // import DelugeRPC from 'deluge-rpc-socket';
 
 type SharedPromise<T> = {
