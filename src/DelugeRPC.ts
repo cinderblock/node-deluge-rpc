@@ -427,7 +427,7 @@ export default function DelugeRPC(
     const opts = await allPromises(options);
     if (typeof opts != 'object' || opts === null) return opts;
     return <RencodableObject | RencodableArray>(
-      snakeCaseKeys(opts, { deep: true })
+      (snakeCaseKeys as any)(opts, { deep: true })
     );
   }
 
