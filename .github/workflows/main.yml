@@ -16,10 +16,10 @@ jobs:
         run: npm install ${{ github.repository }}#${{ github.sha }}
 
       - name: 'Debug: List Dependency Folder Contents'
-        run: find node_modules/node-deluge-rpc -type f -print
+        run: find node_modules/deluge-rpc-socket -type f -print
 
       - name: Ensure Built files are there
-        working-directory: node_modules/node-deluge-rpc
+        working-directory: node_modules/deluge-rpc-socket
         # TODO: make this a better test
         run: ls package.json src/DelugeRPC.js src/DelugeRPC.d.ts
 
