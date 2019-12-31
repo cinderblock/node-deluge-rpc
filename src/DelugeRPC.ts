@@ -682,7 +682,7 @@ export default function DelugeRPC(
   };
 
   // Final API with camelCase or snake_case
-  // We could do this more programmatically but this help tsc more
+  // We could do this more programmatically but this helps the TypeScript Compiler more
   const core = {
     add_torrent_file: camelCore.addTorrentFile,
     addTorrentFile: camelCore.addTorrentFile,
