@@ -5,7 +5,7 @@
   "main": "src/DelugeRPC",
   "types": "src/DelugeRPC.d.ts",
   "scripts": {
-    "format": "prettier \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
+    "format": "prettier **/*",
     "spellcheck": "cspell",
     "test": "jest --passWithNoTests",
     "preversion": "yarn format --write",

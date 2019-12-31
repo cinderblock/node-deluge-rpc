@@ -1,3 +1,10 @@
 /coverage
 /src/DelugeRPC.js
 /src/DelugeRPC.d.ts
+/yarn.lock
+/config.js
+
+# No Parser
+.gitignore
+.editorconfig
+.prettierignore
