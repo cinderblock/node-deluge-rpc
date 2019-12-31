@@ -34,8 +34,10 @@
     "snakecase-keys": "^3.1.0"
   },
   "devDependencies": {
+    "@types/camelcase-keys-deep": "^0.1.0",
     "@types/jest": "^24.0.25",
     "@types/node": "^13.1.2",
+    "@types/pako": "^1.0.1",
     "coveralls": "^3.0.9",
     "cspell": "^4.0.43",
     "install-vscode-extensions": "^1.0.0",

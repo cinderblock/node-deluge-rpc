@@ -5,9 +5,9 @@ import { Socket } from 'net';
 import { promisify } from 'util';
 import { readFile } from 'fs';
 
-const camelCaseKeys = require('camelcase-keys-deep');
-const snakeCaseKeys = require('snakecase-keys');
-const pako = require('pako');
+import camelCaseKeys from 'camelcase-keys-deep';
+import snakeCaseKeys from 'snakecase-keys';
+import pako from 'pako';
 
 import {
   encode,
@@ -338,7 +338,7 @@ export default function DelugeRPC(
     if (!camelCaseResponses) return data;
     // Try catch is easy way to handle
     try {
-      return camelCaseKeys(data, { deep: true });
+      return (camelCaseKeys as any)(data, { deep: true });
     } catch (e) {}
     return data;
   }
