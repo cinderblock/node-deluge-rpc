@@ -71,7 +71,7 @@ jobs:
       - name: Listening ports
         run: sudo netstat -lpnt
 
-      - run: sleep 5
+      - run: sleep 30
 
       - name: Listening ports
         run: sudo netstat -lpnt
