@@ -6,7 +6,7 @@
   "types": "src/DelugeRPC.d.ts",
   "scripts": {
     "format": "prettier **/*",
-    "spellcheck": "cspell",
+    "spellcheck": "cspell **/*",
     "test": "jest --passWithNoTests",
     "preversion": "yarn format --write",
     "build": "tsc --declaration",
