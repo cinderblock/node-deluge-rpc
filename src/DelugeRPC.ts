@@ -20,7 +20,7 @@ import nextPowerOfTwo from 'smallest-power-of-two';
 
 const readFilePromise = promisify(readFile);
 
-function getDebug(d: boolean | Function | undefined) {
+function getDebug(d: boolean | ((...args: any[]) => void) | undefined) {
   return typeof d == 'function'
     ? d
     : d === true
@@ -60,7 +60,7 @@ export default function DelugeRPC(
      * True makes a generic one that prints to terminal.
      * False does nothing
      */
-    debug?: boolean | Function;
+    debug?: boolean | ((...args: any[]) => void);
     /**
      * Which Deluge protocol should we use
      *
@@ -68,13 +68,6 @@ export default function DelugeRPC(
      * Deluge ^2.0.0 uses version 1
      */
     protocolVersion?: 0 | 1;
-    /**
-     * Changes the behavior of the returned promises.
-     *
-     * If true, promises will never throw.
-     * All functions return an object that has one of error or response set as appropriate
-     */
-    resolveErrorResponses?: boolean;
     /**
      * Convert all responses from Deluge to camelCase
      *
@@ -87,13 +80,11 @@ export default function DelugeRPC(
   const debug = getDebug(options.debug);
   // Default protocol version 0
   const protocolVersion = options.protocolVersion || 0;
-  // Default false-ish
-  const resolveErrorResponses = options.resolveErrorResponses;
-  // Default true
-  const camelCaseResponses =
-    options.camelCaseResponses === undefined || options.camelCaseResponses;
 
-  // Internal receive buffer I n case multi-part messages are received.
+  // Default true
+  const camelCaseResponses = options.camelCaseResponses ?? true;
+
+  // Internal receive buffer in case multi-part messages are received.
   let buffer = Buffer.allocUnsafe(0);
   let currentLength = 0;
 
@@ -113,15 +104,32 @@ export default function DelugeRPC(
 
   // Once we process some data, we need a way to remove it from the current buffer
   function removeBufferBeginning(size: number) {
+    // Buffer.copy() goes from left to right so won't overwrite itself
     buffer.copy(buffer, 0, size, currentLength);
     currentLength -= size;
   }
 
+  type ResponseResolver = {
+    /**
+     * Handle error when decoding response
+     */
+    reject: (error?: Error) => void;
+    /**
+     * Handle decoded response
+     */
+    resolve: (
+      response: { response: RencodableData } | { error: RencodableData }
+    ) => void;
+  };
+
   // Request/Response pairs to and from Deluge are matched with an integer index
   let nextRequestId = 0;
+
+  const resolverIdLimit = 300;
+
   // Buffer of pending response handlers
   const resolvers: {
-    [x: number]: { reject: Function; resolve: Function };
+    [x: number]: ResponseResolver;
   } = {};
 
   /**
@@ -129,7 +137,8 @@ export default function DelugeRPC(
    */
   function nextId() {
     const ret = nextRequestId++;
-    if (nextRequestId >= 1 << (8 * 4)) nextRequestId = 0;
+    // Trap to some smaller positive integer to prevent resolve array from blowing up in size
+    if (nextRequestId >= resolverIdLimit) nextRequestId = 0;
     return ret;
   }
 
@@ -141,27 +150,6 @@ export default function DelugeRPC(
     const ret = resolvers[id];
     delete resolvers[id];
     return ret;
-  }
-
-  /**
-   * Save a new resolve/reject pair to the store
-   * @param id deluge response ID
-   * @param p reject/resolve pair
-   */
-  function saveResolvers(
-    id: number,
-    p: { reject: Function; resolve: Function }
-  ) {
-    resolvers[id] = !resolveErrorResponses
-      ? p
-      : {
-          resolve: (response: RencodableData) => {
-            p.resolve({ response });
-          },
-          reject: (error: Error) => {
-            p.resolve({ error });
-          },
-        };
   }
 
   // Event emitter to pass on asynchronous events (among others)
@@ -183,9 +171,9 @@ export default function DelugeRPC(
     const [type, id, data] = <[number, number | string, RencodableData]>payload;
 
     if (type == RESPONSE) {
-      getResolvers(<number>id).resolve(data);
+      getResolvers(<number>id).resolve({ response: data });
     } else if (type == ERROR) {
-      getResolvers(<number>id).reject(data);
+      getResolvers(<number>id).resolve({ error: data });
     } else if (type == EVENT) {
       events.emit('delugeEvent', { name: id, data });
     } else {
@@ -260,7 +248,7 @@ export default function DelugeRPC(
    * @param data Encodable data to be sent
    * @param cb Callback to call when data actually sent
    */
-  function rawSend(data: RencodableData, cb: Function) {
+  function rawSend(data: RencodableData, cb: (err?: Error) => void) {
     // Encode the data as Deluge expects
     let buff = pako.deflate(encode(data));
 
@@ -328,11 +316,11 @@ export default function DelugeRPC(
   }
 
   // Expected response of default API
-  type SentDefault = undefined;
+  type SentDefault = null;
   type ResultDefault<T> = T;
 
   // Expected response of alternate API
-  type SentAlternate = undefined | { error: Error };
+  type SentAlternate = null | { error: Error };
   type ResultAlternate<T> = { error: [] | {} | string } | { response: T };
 
   // TODO: See if we can return Default or Alternate response types based on function arguments
@@ -368,25 +356,22 @@ export default function DelugeRPC(
     args:
       | ArrayAwaitableRencodable
       | ObjectAwaitableRencodable
-      | Awaitable<undefined> = [],
-    kwargs: ObjectAwaitableRencodable | Awaitable<undefined> = {}
+      | Awaitable<null> = [],
+    kwargs: ObjectAwaitableRencodable | Awaitable<null> = {}
   ): ResponseType<RencodableData> {
     // Get next response ID
     const id = nextId();
 
     // Create the result promise that will be resolved when we receive the response from the server
     const result = new Promise<RencodableData>((resolve, reject) => {
-      saveResolvers(id, {
+      resolvers[id] = {
         resolve: (data: RencodableData) => resolve(parseResponse(data)),
         reject,
-      });
+      };
     });
 
     // Create the sent promise that will be resolved when the message is sent on the wire.
     const sent = new Promise<Sent>(async (resolve, reject) => {
-      // Handle alternate API
-      reject = resolveErrorResponses ? resolve : reject;
-
       // DEBATE: Should we also reject our result?
       // reject = (...args) => {getResolvers(id).reject(...args); reject(...args);};
 
@@ -451,7 +436,7 @@ export default function DelugeRPC(
     addTorrentFile: (
       filename: Awaitable<string>,
       filedump: Awaitable<FileDump>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>
     ) =>
       // TODO: Return type
       request('core.add_torrent_file', [
@@ -462,8 +447,8 @@ export default function DelugeRPC(
 
     addTorrentUrl: (
       url: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>,
-      options: Awaitable<{ headers?: Awaitable<FlatMap> } | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>,
+      options: Awaitable<{ headers?: Awaitable<FlatMap> } | null>
     ) =>
       // TODO: Return type
       request(
@@ -471,12 +456,12 @@ export default function DelugeRPC(
         [url, handleOptions(torrentOptions)],
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<undefined>
+          | Awaitable<null>
       ),
 
     addTorrentMagnet: (
       uri: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>
     ) =>
       // TODO: Return type
       request('core.add_torrent_magnet', [uri, handleOptions(torrentOptions)]),
@@ -525,11 +510,11 @@ export default function DelugeRPC(
 
     pauseAllTorrents: () =>
       // TODO: Return type
-      <ResponseType<undefined>>request('core.pause_all_torrents'),
+      <ResponseType<null>>request('core.pause_all_torrents'),
 
     resumeAllTorrents: () =>
       // TODO: Return type
-      <ResponseType<undefined>>request('core.resume_all_torrents'),
+      <ResponseType<null>>request('core.resume_all_torrents'),
 
     resumeTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
       // TODO: Return type
@@ -546,7 +531,7 @@ export default function DelugeRPC(
         [torrentId, keys] as ArrayAwaitableRencodable,
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<undefined>
+          | Awaitable<null>
       ),
 
     // TODO: Return type
@@ -560,7 +545,7 @@ export default function DelugeRPC(
         [filterDict, keys] as ArrayAwaitableRencodable,
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<undefined>
+          | Awaitable<null>
       ),
 
     getFilterTree: (options: {
@@ -568,9 +553,12 @@ export default function DelugeRPC(
       hideCats?: Awaitable<Awaitable<string>[]>;
     }) =>
       // TODO: Return type
-      request('core.get_filter_tree', handleOptions(
-        options as AwaitableRencodableData
-      ) as ObjectAwaitableRencodable | Awaitable<undefined>),
+      request(
+        'core.get_filter_tree',
+        handleOptions(options as AwaitableRencodableData) as
+          | ObjectAwaitableRencodable
+          | Awaitable<null>
+      ),
 
     getSessionState: () =>
       request('core.get_session_state') as ResponseType<string[]>,
@@ -615,7 +603,7 @@ export default function DelugeRPC(
 
     setTorrentOptions: (
       torrentIds: Awaitable<Awaitable<string>[]>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>
     ) =>
       // TODO: Return type
       request('core.set_torrent_options', [

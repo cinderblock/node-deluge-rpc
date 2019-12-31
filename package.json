@@ -5,17 +5,13 @@
   "main": "src/DelugeRPC",
   "types": "src/DelugeRPC.d.ts",
   "scripts": {
-    "format": "prettier --write \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
-    "ci": "yarn test && yarn coveralls",
+    "format": "prettier \"**/*.@(ts|js?(on)|md|prettierrc|clang-format|yml)\"",
     "test": "jest --passWithNoTests",
-    "coveralls": "coveralls < coverage/lcov.info",
-    "preversion": "yarn format",
-    "postversion": "npm publish",
+    "preversion": "yarn format --write",
     "build": "tsc --declaration",
     "clean": "rm -f src/DelugeRPC.{d.ts,js}",
     "checks": "yarn format && yarn build && yarn test",
-    "prepublishOnly": "yarn build",
-    "postpublish": "git push origin master --tags",
+    "prepare": "yarn build",
     "start": "yarn repl",
     "prerepl": "yarn clean",
     "repl": "ts-node repl.ts --experimental-repl-await",
@@ -23,7 +19,6 @@
     "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp -i config.sample.js config.js"
   },
   "files": [
-    "src/DelugeRPC.ts",
     "src/DelugeRPC.js",
     "src/DelugeRPC.d.ts"
   ],
@@ -33,14 +28,15 @@
   "dependencies": {
     "camelcase-keys-deep": "^0.1.0",
     "pako": "^1.0.10",
-    "python-rencode": "^1.4.2",
-    "smallest-power-of-two": "^1.1.0",
+    "python-rencode": "^1.4.4",
+    "smallest-power-of-two": "^1.1.2",
     "snakecase-keys": "^3.1.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.25",
-    "@types/node": "^13.1.1",
+    "@types/node": "^13.1.2",
     "coveralls": "^3.0.9",
+    "cspell": "^4.0.43",
     "install-vscode-extensions": "^1.0.0",
     "jest": "^24.9.0",
     "prettier": "^1.19.1",

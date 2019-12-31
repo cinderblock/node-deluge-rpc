@@ -1,0 +1,113 @@
+name: Main
+
+on: [push, pull_request]
+
+jobs:
+  test-install-and-run-from-git:
+    name: Test - Install & Run from Github
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Dummy Package.json
+        run: echo \{\} > package.json
+
+      - name: Install Current Version as Git Dependency
+        run: npm install ${{ github.repository }}#${{ github.sha }}
+
+      - name: 'Debug: List Dependency Folder Contents'
+        run: find node_modules/node-deluge-rpc -type f -print
+
+      - name: Ensure Built files are there
+        working-directory: node_modules/node-deluge-rpc
+        # TODO: make this a better test
+        run: ls package.json src/DelugeRPC.js src/DelugeRPC.d.ts
+
+  check-format:
+    name: Check - Format
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v1
+
+      - name: Build
+        run: yarn install
+
+      - name: Prettier
+        run: yarn format-check
+
+  check-spelling:
+    name: Check - Spelling
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v1
+
+      - name: Build
+        run: yarn install
+
+      - name: Spelling
+        run: yarn spellcheck
+
+  test-with-coverage:
+    name: Generate - Coverage Reports
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v1
+
+      - name: 'Debug: Node version'
+        run: node --version
+
+      - name: Install Deluged 1.3.15 to test against
+        run: sudo apt-get install -y deluged
+
+      - name: Build
+        run: yarn install
+
+      - name: 'Debug: List post build files'
+        run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/build.list
+
+      - name: Test with Coverage
+        run: yarn run test --ci --coverage
+
+      - name: 'Debug: List post Coverage files'
+        run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/coverage.list
+
+      - name: 'Debug: Coverage diff'
+        run: 'diff -U 0 /tmp/build.list /tmp/coverage.list || :'
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v1.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish - Master
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs:
+      [
+        test-with-coverage,
+        test-install-and-run-from-git,
+        check-spelling,
+        check-format,
+      ]
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v1
+
+      - name: Create .npmrc with Auth Token
+        run: echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+
+      - name: Publish to npm
+        run: 'npm publish || :'
+        env:
+          NPM_TOKEN: ${{ secrets.npm_token }}
