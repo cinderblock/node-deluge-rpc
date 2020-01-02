@@ -70,6 +70,8 @@ jobs:
       - name: 'Debug: Node version'
         run: node --version
 
+      - run: sudo apt-get install virtualenv -y
+
       # - name: Install Deluged Dependencies
       #   run: sudo apt-get build-dep -y deluged
 
