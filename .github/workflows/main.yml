@@ -72,6 +72,9 @@ jobs:
 
       - run: sudo apt-get install virtualenv -y
 
+      - run: which python2
+      - run: which python3
+
       # - name: Install Deluged Dependencies
       #   run: sudo apt-get build-dep -y deluged
 
