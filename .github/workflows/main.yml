@@ -62,25 +62,42 @@ jobs:
       - name: Checkout latest code
         uses: actions/checkout@v1
 
+      # - name: Set up Python
+      #   uses: actions/setup-python@v1
+      #   with:
+      #     python-version: 2.7
+
       - name: 'Debug: Node version'
         run: node --version
 
-      - name: Install Deluged Dependencies
-        run: sudo apt-get build-dep -y deluged
+      # - name: Install Deluged Dependencies
+      #   run: sudo apt-get build-dep -y deluged
 
-      - name: Get Deluge sources
-        run: git clone -b 1.3-stable --single-branch https://git.deluge-torrent.org/deluge deluge-1.3
+      - name: Setup Virtual Env for Deluge 1.3 with Python 2.7
+        run: virtualenv deluge-1.3-env
 
-      - name: Setup Deluge 1.3
-        working-directory: deluge-1.3
-        run: python2 setup.py build
+      - name: Install Deluge 1.3
+        run: deluge-1.3-env/bin/pip2 install git+git://deluge-torrent.org/deluge.git@1.3-stable
 
-      - name: "Debug: List Deluge's files, post build"
-        working-directory: deluge-1.3
+      - name: "Debug: List Deluge v1.3's files, post install"
+        working-directory: deluge-1.3-env
         run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/build.list
 
       - name: Start Deluge 1.3 Daemon
-        run: deluge-1.3/bin/
+        run: deluge-1.3/bin/deluged --help
+
+      - name: Setup Virtual Env for Deluge 2 with Python 3
+        run: virtualenv deluge-2-env
+
+      - name: Install Deluge 2
+        run: deluge-2-env/bin/pip2 install git+git://deluge-torrent.org/deluge.git@2-stable
+
+      - name: "Debug: List Deluge 2's files, post install"
+        working-directory: deluge-2-env
+        run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/build.list
+
+      - name: Start Deluge 2 Daemon
+        run: deluge-2/bin/deluged --help
 
       - name: Listening ports
         run: sudo netstat -lpnt
