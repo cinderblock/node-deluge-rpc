@@ -72,8 +72,8 @@ jobs:
 
       - run: sudo apt-get install virtualenv -y
 
-      # - name: Install Deluged Dependencies
-      #   run: sudo apt-get build-dep -y deluged
+      - name: Install Deluged Dependencies
+        run: sudo apt-get build-dep -y deluged
 
       - name: Setup Virtual Env for Deluge 1.3 with Python 2
         run: virtualenv --python=/usr/bin/python2 deluge-1.3-env
