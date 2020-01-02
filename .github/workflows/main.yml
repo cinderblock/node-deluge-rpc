@@ -72,14 +72,11 @@ jobs:
 
       - run: sudo apt-get install virtualenv -y
 
-      - run: which python2
-      - run: which python3
-
       # - name: Install Deluged Dependencies
       #   run: sudo apt-get build-dep -y deluged
 
-      - name: Setup Virtual Env for Deluge 1.3 with Python 2.7
-        run: virtualenv deluge-1.3-env
+      - name: Setup Virtual Env for Deluge 1.3 with Python 2
+        run: virtualenv --python=/usr/bin/python2 deluge-1.3-env
 
       - name: Install Deluge 1.3
         run: deluge-1.3-env/bin/pip2 install git+git://deluge-torrent.org/deluge.git@1.3-stable
@@ -92,7 +89,7 @@ jobs:
         run: deluge-1.3-env/bin/deluged --help
 
       - name: Setup Virtual Env for Deluge 2 with Python 3
-        run: virtualenv deluge-2-env
+        run: virtualenv --python=/usr/bin/python3 deluge-2-env
 
       - name: Install Deluge 2
         run: deluge-2-env/bin/pip2 install git+git://deluge-torrent.org/deluge.git@2-stable
