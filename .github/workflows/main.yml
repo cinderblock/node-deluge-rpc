@@ -65,8 +65,22 @@ jobs:
       - name: 'Debug: Node version'
         run: node --version
 
-      - name: Install Deluged 1.3.15 to test against
-        run: sudo apt-get install -y deluged
+      - name: Install Deluged Dependencies
+        run: sudo apt-get build-dep -y deluged
+
+      - name: Get Deluge sources
+        run: git clone -b 1.3-stable --single-branch https://git.deluge-torrent.org/deluge deluge-1.3
+
+      - name: Setup Deluge 1.3
+        working-directory: deluge-1.3
+        run: python2 setup.py build
+
+      - name: "Debug: List Deluge's files, post build"
+        working-directory: deluge-1.3
+        run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/build.list
+
+      - name: Start Deluge 1.3 Daemon
+        run: deluge-1.3/bin/
 
       - name: Listening ports
         run: sudo netstat -lpnt
