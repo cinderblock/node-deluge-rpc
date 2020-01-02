@@ -105,14 +105,10 @@ jobs:
       - name: Listening ports
         run: sudo netstat -lpnt
 
-      - run: sudo systemctl status deluged
-
       - run: sleep 30
 
       - name: Listening ports
         run: sudo netstat -lpnt
-
-      - run: sudo systemctl status deluged
 
       - name: Build
         run: yarn install
