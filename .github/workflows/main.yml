@@ -71,7 +71,7 @@ jobs:
         run: node --version
 
       - name: Install Needed tools
-      - run: sudo apt-get install deluged virtualenv -y
+        run: sudo apt-get install deluged virtualenv -y
 
       - name: Remove deluged global
         run: sudo apt-get remove deluged
