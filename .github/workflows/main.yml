@@ -100,7 +100,7 @@ jobs:
         run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/build.list
 
       - name: Start Deluge 2 Daemon
-        run: deluge-2-env/bin/deluged --port=9001 --config=deluge2
+        run: deluge-2-env/bin/deluged --help --config=deluge2
 
       - name: Listening ports
         run: sudo netstat -lpnt
