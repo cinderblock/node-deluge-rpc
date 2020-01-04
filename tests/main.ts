@@ -74,8 +74,7 @@ const port1 =
 const host1 =
   process.env.DELUGE1_HOST || process.env.DELUGE_HOST || 'localhost';
 
-const version1 =
-  (process.env.DELUGE1_VERSION || process.env.DELUGE_VERSION) ?? 0 ? 1 : 0;
+const version1 = Number(process.env.DELUGE_PROTOCOL_VERSION) || 0 ? 1 : 0;
 
 const port2 = Number(process.env.DELUGE2_PORT);
 const host2 = process.env.DELUGE2_HOST || 'localhost';
