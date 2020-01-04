@@ -51,7 +51,7 @@ function testDeluge({
   expectedVersion,
   name,
 }: Options) {
-  name += ' - ';
+  name = name ? name + ' - ' : '';
 
   const socket = SharedPromise<tls.TLSSocket>();
 
