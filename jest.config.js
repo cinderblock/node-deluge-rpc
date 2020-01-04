@@ -6,7 +6,8 @@ module.exports = {
   coverageDirectory: 'coverage',
   testEnvironment: 'node',
   collectCoverage: true,
+  collectCoverageFrom: ['src/**/{!(*.d),}.ts'],
   transform: { '^.+\\.ts$': 'ts-jest' },
-  testRegex: '(/tests/.*)\\.ts$',
+  testRegex: '(/tests/[^/]+)\\.ts$',
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
 };
