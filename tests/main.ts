@@ -68,7 +68,11 @@ function testDeluge({
   });
 
   test(name + 'Wrap with Daemon', async () => {
-    RPC.resolve(DelugeRPC(await socket.promise));
+    const d = DelugeRPC(await socket.promise, {
+      protocolVersion: expectedVersion,
+    });
+
+    RPC.resolve(d);
 
     await RPC.promise;
   });
