@@ -13,12 +13,10 @@ type Options = {
   name?: string;
 };
 
-function testDeluge({
-  connect: { host, port },
-  options,
-  expectedVersion,
-  name,
-}: Options) {
+function testDeluge(
+  test: jest.It,
+  { connect: { host, port }, options, expectedVersion, name }: Options
+) {
   name = name ? name + ' - ' : '';
 
   const socket = SharedPromise<tls.TLSSocket>();
@@ -76,7 +74,7 @@ const options = {
   rejectUnauthorized: false,
 };
 
-testDeluge({
+testDeluge(test, {
   connect: { host: host1, port: port1 },
   options,
   expectedVersion: version1,
@@ -84,7 +82,7 @@ testDeluge({
 });
 
 if (port2) {
-  testDeluge({
+  testDeluge(test, {
     connect: { host: host2, port: port2 },
     options,
     expectedVersion: 1,
