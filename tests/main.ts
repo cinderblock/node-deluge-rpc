@@ -69,7 +69,7 @@ function testDeluge({ connect, options, expectedVersion, name }: Options) {
   });
 
   test(name + 'Get version', async () => {
-    await connected;
+    await connected.promise;
     const rpc = await RPC.promise;
 
     const { sent, result } = rpc.daemon.info();
