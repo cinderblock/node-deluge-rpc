@@ -41,12 +41,8 @@ function testVersion(
   });
 
   async function connect() {
-    await connected.promise.catch(e => {
-      throw e;
-    });
-    return RPC.promise.catch(e => {
-      throw e;
-    });
+    await connected.promise;
+    return RPC.promise;
   }
 
   test('Get Version', async () => {
