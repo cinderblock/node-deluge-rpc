@@ -286,17 +286,23 @@ export default function DelugeRPC(
    * @param data Encodable data to be sent
    * @param cb Callback to call when data actually sent
    */
-  function rawSend(data: RencodableData, cb: (err?: Error) => void) {
+  function rawSend(
+    data: RencodableData,
+    cb: (err?: Error) => void,
+    overrideVersion?: 0 | 1
+  ) {
     // Encode the data as Deluge expects
     let buff = pako.deflate(encode(data));
 
-    if (protocolVersion == 0) {
+    if (overrideVersion === undefined) overrideVersion = protocolVersion;
+
+    if (overrideVersion == 0) {
       // Don't need to do anything. Just raw send encoded buffer.
-    } else if (protocolVersion == 1) {
+    } else if (overrideVersion == 1) {
       // TODO: Test this with deluge dev version
       const header = Buffer.allocUnsafe(5);
       // Add protocol version header
-      header.writeUInt8(protocolVersion, 0);
+      header.writeUInt8(overrideVersion, 0);
       // And payload length
       header.writeUInt32BE(buff.length, 1);
       // Join the two
@@ -376,11 +382,15 @@ export default function DelugeRPC(
       }
 
       try {
-        rawSend([[id, methodRes, argsRes, kwargsRes]], () => {
-          // Clean up after ourselves
-          socket.removeListener('error', reject);
-          resolve();
-        });
+        rawSend(
+          [[id, methodRes, argsRes, kwargsRes]],
+          () => {
+            // Clean up after ourselves
+            socket.removeListener('error', reject);
+            resolve();
+          },
+          protocolVersion
+        );
       } catch (e) {
         // Probably an error resolving all of the passed arguments
         socket.removeListener('error', reject);
