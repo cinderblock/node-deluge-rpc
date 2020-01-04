@@ -135,6 +135,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Shutdown Deluged 1
+        run: echo TODO
+      - name: Shutdown Deluged 2
+        run: echo TODO
+
   publish:
     name: Publish - Master
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
