@@ -10,22 +10,19 @@ type Options = {
   connect: { host: string; port: number };
   options?: tls.ConnectionOptions;
   expectedVersion: 0 | 1;
-  name?: string;
 };
 
-function testDeluge(
+function testVersion(
   test: jest.It,
-  { connect: { host, port }, options, expectedVersion, name }: Options
+  { connect: { host, port }, options, expectedVersion }: Options
 ) {
-  name = name ? name + ' - ' : '';
-
   const socket = SharedPromise<tls.TLSSocket>();
 
   const connected = SharedPromise();
 
   const RPC = SharedPromise<ReturnType<typeof DelugeRPC>>();
 
-  test(name + 'Connect', async () => {
+  test('Connect', async () => {
     socket.resolve(
       tls.connect(port, host, options).on('secureConnect', connected.resolve)
     );
@@ -33,7 +30,7 @@ function testDeluge(
     await connected.promise;
   });
 
-  test(name + 'Wrap with Daemon', async () => {
+  test('Wrap with Daemon', async () => {
     const d = DelugeRPC(await socket.promise, {
       protocolVersion: expectedVersion,
     });
@@ -43,9 +40,17 @@ function testDeluge(
     await RPC.promise;
   });
 
-  test(name + 'Get Version', async () => {
-    await connected.promise;
-    const rpc = await RPC.promise;
+  async function connect() {
+    await connected.promise.catch(e => {
+      throw e;
+    });
+    return RPC.promise.catch(e => {
+      throw e;
+    });
+  }
+
+  test('Get Version', async () => {
+    const rpc = await connect();
 
     const { sent, result } = rpc.daemon.info();
 
@@ -74,18 +79,23 @@ const options = {
   rejectUnauthorized: false,
 };
 
-testDeluge(test, {
-  connect: { host: host1, port: port1 },
-  options,
-  expectedVersion: version1,
-  name: port2 ? 'Deluge 1.x' : undefined,
-});
-
-if (port2) {
-  testDeluge(test, {
-    connect: { host: host2, port: port2 },
+function firstTests() {
+  testVersion(test, {
+    connect: { host: host1, port: port1 },
     options,
-    expectedVersion: 1,
-    name: 'Deluge 2.x',
+    expectedVersion: version1,
+  });
+}
+
+if (!port2) {
+  firstTests();
+} else {
+  describe('Deluge 1.x', firstTests);
+  describe('Deluge 2.x', () => {
+    testVersion(test, {
+      connect: { host: host2, port: port2 },
+      options,
+      expectedVersion: 1,
+    });
   });
 }
