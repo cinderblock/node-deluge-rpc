@@ -23,9 +23,10 @@ function testVersion(
   const RPC = SharedPromise<ReturnType<typeof DelugeRPC>>();
 
   test('Connect', async () => {
-    socket.resolve(
-      tls.connect(port, host, options).on('secureConnect', connected.resolve)
-    );
+    const s = tls.connect(port, host, options);
+    s.on('secureConnect', connected.resolve);
+
+    socket.resolve(s);
 
     await connected.promise;
   });
