@@ -21,7 +21,7 @@ jobs:
       - name: Ensure Built files are there
         working-directory: node_modules/deluge-rpc-socket
         # TODO: make this a better test
-        run: ls package.json src/DelugeRPC.js src/DelugeRPC.d.ts
+        run: ls package.json dist/{DelugeRPC.{js,d.ts},utils/SharedPromise.js}
 
   check-format:
     name: Check - Format

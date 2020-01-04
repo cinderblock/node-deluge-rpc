@@ -16,7 +16,25 @@ import {
   RencodableObject,
   RencodableArray,
 } from 'python-rencode';
+
 import nextPowerOfTwo from 'smallest-power-of-two';
+
+import { SharedPromise } from './utils/SharedPromise';
+import { AllPromises } from './utils/AllPromises';
+
+import {
+  Awaitable,
+  AwaitableRencodableData,
+  ObjectAwaitableRencodable,
+  ArrayAwaitableRencodable,
+} from './utils/Awaitable';
+
+export {
+  Awaitable,
+  AwaitableRencodableData,
+  ObjectAwaitableRencodable,
+  ArrayAwaitableRencodable,
+} from './utils/Awaitable';
 
 const readFilePromise = promisify(readFile);
 
@@ -28,22 +46,39 @@ function getDebug(d: boolean | ((...args: any[]) => void) | undefined) {
     : () => {};
 }
 
-type Awaitable<T> = T | Promise<T>;
-export type AwaitableRencodableData =
-  | Awaitable<RencodableData>
-  | ArrayAwaitableRencodable
-  | ObjectAwaitableRencodable;
-
-export interface ObjectAwaitableRencodable {
-  [k: string]: AwaitableRencodableData;
-  [k: number]: AwaitableRencodableData;
-}
-export interface ArrayAwaitableRencodable
-  extends Array<AwaitableRencodableData> {}
-
 export async function loadFile(file: string) {
   return (<Buffer>await readFilePromise(file)).toString('base64');
 }
+
+/**
+ * @experimental Subject to change
+ */
+export type RPCError = RencodableData;
+
+export type ErrorResult = { error: RPCError };
+
+export type SuccessResult<
+  RPCResponse extends RencodableData = RencodableData
+> = { value: RPCResponse };
+
+export function isRPCError<RPCResponse extends RencodableData = RencodableData>(
+  result: SuccessResult<RPCResponse> | ErrorResult
+): result is ErrorResult {
+  return !!(result as ErrorResult).error;
+}
+
+/**
+ * @future Timeout might be added as a response type
+ */
+export type RequestResult<
+  RPCResponse extends RencodableData = RencodableData
+> = SuccessResult<RPCResponse> | ErrorResult;
+
+/**
+ * Deluge ^1.0.0 uses version 0 (default)
+ * Deluge ^2.0.0 uses version 1
+ */
+export type ProtocolVersion = 0 | 1;
 
 /**
  * Create an API attached to a specified socket
@@ -67,7 +102,7 @@ export default function DelugeRPC(
      * Deluge ^1.0.0 uses version 0 (default)
      * Deluge ^2.0.0 uses version 1
      */
-    protocolVersion?: 0 | 1;
+    protocolVersion?: ProtocolVersion;
     /**
      * Convert all responses from Deluge to camelCase
      *
@@ -112,14 +147,14 @@ export default function DelugeRPC(
   type ResponseResolver = {
     /**
      * Handle error when decoding response
+     *
+     * @future timeout handling?
      */
     reject: (error?: Error) => void;
     /**
      * Handle decoded response
      */
-    resolve: (
-      response: { response: RencodableData } | { error: RencodableData }
-    ) => void;
+    resolve: (response: RequestResult) => void;
   };
 
   // Request/Response pairs to and from Deluge are matched with an integer index
@@ -171,11 +206,12 @@ export default function DelugeRPC(
     const [type, id, data] = <[number, number | string, RencodableData]>payload;
 
     if (type == RESPONSE) {
-      getResolvers(<number>id).resolve({ response: data });
+      getResolvers(<number>id).resolve({ value: parseResponse(data) });
     } else if (type == ERROR) {
-      getResolvers(<number>id).resolve({ error: data });
+      // The API says data is just the exception type but I think it includes all of it
+      getResolvers(<number>id).resolve({ error: parseResponse(data) });
     } else if (type == EVENT) {
-      events.emit('delugeEvent', { name: id, data });
+      events.emit('delugeEvent', { name: id, data: parseResponse(data) });
     } else {
       events.emit('decodingError', 'Invalid payload type received:', type);
     }
@@ -272,69 +308,17 @@ export default function DelugeRPC(
     socket.write(buff, cb);
   }
 
-  // Check if data is an object we want to parse
-  function isObject(x: any) {
-    if (typeof x !== 'object') return false;
-    if (x === null) return false;
-
-    // Might as well keep these
-    if (x instanceof RegExp) return false;
-    if (x instanceof Error) return false;
-    if (x instanceof Date) return false;
-
-    return true;
-  }
-
-  // Resolve when all Promises deeply in objects or arrays resolve
-  async function allPromises(
-    data: AwaitableRencodableData
-  ): Promise<RencodableData> {
-    // Resolve any promise or get raw data
-    const dataResolved = await data;
-
-    // Even if dataResolved is a function, null, or some other non RencodableData, let something else error
-    if (!isObject(dataResolved)) return <RencodableData>dataResolved;
-
-    if (Array.isArray(dataResolved)) {
-      // If we're checking an array, recurse and resolve everything inside
-      return Promise.all(
-        (<ArrayAwaitableRencodable>dataResolved).map(allPromises)
-      );
-    }
-
-    // At this point we know we'll be returning some object
-    const ret: RencodableObject = {};
-
-    const keys = Object.keys(<ObjectAwaitableRencodable>dataResolved);
-    for (let i = 0; i < keys.length; i++) {
-      ret[keys[i]] = await allPromises(
-        (<ObjectAwaitableRencodable>dataResolved)[keys[i]]
-      );
-    }
-
-    return ret;
-  }
-
   // Expected response of default API
-  type SentDefault = null;
-  type ResultDefault<T> = T;
-
-  // Expected response of alternate API
-  type SentAlternate = null | { error: Error };
-  type ResultAlternate<T> = { error: [] | {} | string } | { response: T };
-
-  // TODO: See if we can return Default or Alternate response types based on function arguments
-  type Sent = SentDefault | SentAlternate;
-  type Result<T> = ResultDefault<T> | ResultAlternate<T>;
+  type RequestSent = void;
 
   // TODO: T must be one of RencodableData
-  type ResponseType<T> = {
-    result: Promise<Result<T>>;
-    sent: Promise<Sent>;
+  type Request<T extends RencodableData> = {
+    result: Promise<RequestResult<T>>;
+    sent: Promise<RequestSent>;
   };
 
   // Handle a response. cameCase it if needed and possible
-  function parseResponse(data: RencodableData) {
+  function parseResponse(data: RencodableData): RencodableData {
     if (!camelCaseResponses) return data;
     // Try catch is easy way to handle
     try {
@@ -351,36 +335,37 @@ export default function DelugeRPC(
    * @param kwargs Any named arguments to be passed to the RPC method
    * @returns An object with two Promises. One for if the data was sent on the wire. The second if the response has been received.
    */
-  function request(
+  function request<T extends RencodableData = RencodableData>(
     method: Awaitable<string>,
     args:
       | ArrayAwaitableRencodable
       | ObjectAwaitableRencodable
       | Awaitable<null> = [],
-    kwargs: ObjectAwaitableRencodable | Awaitable<null> = {}
-  ): ResponseType<RencodableData> {
+    kwargs: ObjectAwaitableRencodable | Awaitable<null> = {},
+    protocolVersion?: ProtocolVersion
+  ): Request<T> {
     // Get next response ID
     const id = nextId();
 
     // Create the result promise that will be resolved when we receive the response from the server
-    const result = new Promise<RencodableData>((resolve, reject) => {
+    const result = new Promise<RequestResult<T>>((resolve, reject) => {
       resolvers[id] = {
-        resolve: (data: RencodableData) => resolve(parseResponse(data)),
+        resolve: resolve as () => RequestResult<RencodableData>,
         reject,
       };
     });
 
     // Create the sent promise that will be resolved when the message is sent on the wire.
-    const sent = new Promise<Sent>(async (resolve, reject) => {
+    const sent = new Promise<RequestSent>(async (resolve, reject) => {
       // DEBATE: Should we also reject our result?
       // reject = (...args) => {getResolvers(id).reject(...args); reject(...args);};
 
       // TODO: confirm this works as intended
       socket.once('error', reject);
 
-      let argsRes = (await allPromises(args)) || [];
-      let kwargsRes = (await allPromises(kwargs)) || {};
-      const methodRes = await allPromises(method);
+      let argsRes = (await AllPromises(args)) || [];
+      let kwargsRes = (await AllPromises(kwargs)) || {};
+      const methodRes = await AllPromises(method);
 
       // Handle calls with no list arguments
       if (!Array.isArray(argsRes)) {
@@ -424,7 +409,7 @@ export default function DelugeRPC(
   }
 
   async function handleOptions(options: AwaitableRencodableData) {
-    const opts = await allPromises(options);
+    const opts = await AllPromises(options);
     if (typeof opts != 'object' || opts === null) return opts;
     return <RencodableObject | RencodableArray>(
       (snakeCaseKeys as any)(opts, { deep: true })
@@ -510,11 +495,11 @@ export default function DelugeRPC(
 
     pauseAllTorrents: () =>
       // TODO: Return type
-      <ResponseType<null>>request('core.pause_all_torrents'),
+      <Request<null>>request('core.pause_all_torrents'),
 
     resumeAllTorrents: () =>
       // TODO: Return type
-      <ResponseType<null>>request('core.resume_all_torrents'),
+      <Request<null>>request('core.resume_all_torrents'),
 
     resumeTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
       // TODO: Return type
@@ -561,7 +546,7 @@ export default function DelugeRPC(
       ),
 
     getSessionState: () =>
-      request('core.get_session_state') as ResponseType<string[]>,
+      request('core.get_session_state') as Request<string[]>,
 
     // TODO: Return type
     getConfig: () => request('core.get_config'),
@@ -578,28 +563,27 @@ export default function DelugeRPC(
       // TODO: Return type
       request('core.set_config', [config]),
 
-    getListenPort: () =>
-      request('core.get_listen_port') as ResponseType<number>,
+    getListenPort: () => request('core.get_listen_port') as Request<number>,
 
     getNumConnections: () =>
-      request('core.get_num_connections') as ResponseType<number>,
+      request('core.get_num_connections') as Request<number>,
 
     getAvailablePlugins: () =>
-      request('core.get_available_plugins') as ResponseType<string[]>,
+      request('core.get_available_plugins') as Request<string[]>,
 
     getEnabledPlugins: () =>
-      request('core.get_enabled_plugins') as ResponseType<string[]>,
+      request('core.get_enabled_plugins') as Request<string[]>,
 
     enablePlugin: (plugin: Awaitable<string>) =>
-      request('core.enable_plugin', [plugin]) as ResponseType<boolean>,
+      request('core.enable_plugin', [plugin]) as Request<boolean>,
 
     disablePlugin: (plugin: Awaitable<string>) =>
-      request('core.disable_plugin', [plugin]) as ResponseType<boolean>,
+      request('core.disable_plugin', [plugin]) as Request<boolean>,
 
     forceRecheck: (torrentIds: Awaitable<Awaitable<string>[]>) =>
       request('core.force_recheck', [
         torrentIds,
-      ] as ArrayAwaitableRencodable) as ResponseType<boolean>,
+      ] as ArrayAwaitableRencodable) as Request<boolean>,
 
     setTorrentOptions: (
       torrentIds: Awaitable<Awaitable<string>[]>,

@@ -4,7 +4,7 @@ export type SharedPromise<T> = {
   reject: (e?: Error) => void;
 };
 
-export function SharedPromise<T = undefined>(): Readonly<SharedPromise<T>> {
+export function SharedPromise<T = void>(): Readonly<SharedPromise<T>> {
   const ret = {} as SharedPromise<T>;
   ret.promise = new Promise<T>((resolve, reject) => {
     ret.resolve = resolve;

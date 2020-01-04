@@ -1,20 +1,23 @@
 import tls from 'tls';
 
 // import DelugeRPC from '..';
-import DelugeRPC from '../src/DelugeRPC.js';
+import DelugeRPC, { ProtocolVersion, isRPCError } from '../dist/DelugeRPC.js';
 // import DelugeRPC from 'deluge-rpc-socket';
 
-import { SharedPromise } from './utils/SharedPromise';
+import { SharedPromise } from '../src/utils/SharedPromise';
 
 type Options = {
   connect: { host: string; port: number };
   options?: tls.ConnectionOptions;
-  expectedVersion: 0 | 1;
+  /**
+   * Undefined means no expected version, autodetect
+   * */
+  protocolVersion?: ProtocolVersion;
 };
 
 function testVersion(
   test: jest.It,
-  { connect: { host, port }, options, expectedVersion }: Options
+  { connect: { host, port }, options, protocolVersion }: Options
 ) {
   const socket = SharedPromise<tls.TLSSocket>();
 
@@ -34,7 +37,7 @@ function testVersion(
 
   test('Wrap with Daemon', async () => {
     const d = DelugeRPC(await socket.promise, {
-      protocolVersion: expectedVersion,
+      protocolVersion,
     });
 
     RPC.resolve(d);
@@ -85,7 +88,7 @@ function firstTests() {
   testVersion(test, {
     connect: { host: host1, port: port1 },
     options,
-    expectedVersion: version1,
+    protocolVersion: version1,
   });
 }
 
@@ -97,7 +100,7 @@ if (!port2) {
     testVersion(test, {
       connect: { host: host2, port: port2 },
       options,
-      expectedVersion: 1,
+      protocolVersion: 1,
     });
   });
 }

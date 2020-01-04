@@ -2,10 +2,11 @@
   "version": "0.1",
   "language": "en",
   "ignorePaths": [
-    "node_modules",
-    ".git",
+    ".git/",
+    "node_modules/",
+    "coverage/",
+    "dist/",
     "yarn.lock",
-    "DelugeRPC.js",
     "config.js"
   ],
   "words": [
@@ -42,6 +43,7 @@
     "rpc",
     "snakecase",
     "tacklind",
+    "traceback",
     "virtualenv",
     "webseeds"
   ],
