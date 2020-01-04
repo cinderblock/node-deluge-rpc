@@ -124,8 +124,8 @@ jobs:
       - name: Test with Coverage
         run: yarn run test --ci --coverage
         env:
-          DELUGE1_PORT: 7999
-          DELUGE2_PORT: 7001
+          DELUGE1_PORT: 8999
+          DELUGE2_PORT: 9001
           # DELUGE1_HOST: localhost
           # DELUGE2_HOST: localhost
 
