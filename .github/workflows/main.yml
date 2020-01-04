@@ -138,6 +138,9 @@ jobs:
       - name: 'Debug: Coverage diff'
         run: 'colordiff -U 0 /tmp/build.list /tmp/coverage.list || :'
 
+      - name: 'Debug: Coveralls'
+        run: cat coverage/lcov.info
+
       - name: Coveralls GitHub Action
         if: always()
         uses: coverallsapp/github-action@v1.0.1
