@@ -25,6 +25,7 @@ function testVersion(
   test('Connect', async () => {
     const s = tls.connect(port, host, options);
     s.on('secureConnect', connected.resolve);
+    s.on('error', connected.reject);
 
     socket.resolve(s);
 
