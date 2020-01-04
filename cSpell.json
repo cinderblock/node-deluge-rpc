@@ -20,6 +20,7 @@
     "logfile",
     "loglevel",
     "mkconfig",
+    "netstat",
     "NOPUBLISH",
     "npmjs",
     "npmrc",
