@@ -59,8 +59,8 @@ function testVersion(
 
     const res = await result;
 
-    console.log('res');
-    console.log(res);
+    // TODO check it. For now, error
+    throw new Error('Finish this test');
   });
 
   afterAll(async () => {
