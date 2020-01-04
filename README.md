@@ -70,8 +70,10 @@ Any named arguments will be converted to Deluge's snake_keys convention.
 
 #### New Features
 
+- Automatic detection of remote version
+- Automated testing against versions
 - Consistent Typings on API
-- Made new Alternate API that is more like the original but has stricter types
+- Made new Alternate API that is more like the original but has stricter types (WIP)
 
 ### v0.4.0
 
