@@ -7,7 +7,7 @@
   "scripts": {
     "format": "prettier **/*",
     "spellcheck": "cspell **/*",
-    "test": "jest --passWithNoTests",
+    "test": "jest",
     "preversion": "yarn format --write",
     "build": "tsc --declaration",
     "clean": "rm -f src/DelugeRPC.{d.ts,js}",
