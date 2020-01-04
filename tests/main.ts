@@ -1,7 +1,7 @@
 import tls from 'tls';
 
 // import DelugeRPC from '..';
-import DelugeRPC, { ProtocolVersion, isRPCError } from '../dist/DelugeRPC.js';
+import DelugeRPC, { ProtocolVersion, isRPCError } from '../src/DelugeRPC';
 // import DelugeRPC from 'deluge-rpc-socket';
 
 import { SharedPromise } from '../src/utils/SharedPromise';
