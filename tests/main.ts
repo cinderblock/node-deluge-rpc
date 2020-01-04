@@ -77,7 +77,7 @@ function testDeluge({
     await RPC.promise;
   });
 
-  test(name + 'Get version', async () => {
+  test(name + 'Get Version', async () => {
     await connected.promise;
     const rpc = await RPC.promise;
 
