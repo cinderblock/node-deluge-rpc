@@ -221,6 +221,8 @@ export default function DelugeRPC(
   socket.on('data', data => {
     appendToIncomingBuffer(data);
 
+    // We automatically detect which version we're talking to upon any response because messages have predictable headers
+
     // Can't do anything if the current length is too short to even hold a type marker
     while (currentLength > 0) {
       // Extract header byte
