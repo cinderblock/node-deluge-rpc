@@ -776,10 +776,38 @@ export default function DelugeRPC(
     login: camelDaemon.login,
   };
 
+  function detectProtocolVersion(): Request<ProtocolVersion> {
+    // This will result in an authentication error on v0 and be ignored on v1
+    const { result: r0, sent: sent0 } = request<string>(
+      'daemon.info',
+      null,
+      null,
+      0
+    );
+
+    // This will result in success on v1 and be ignored on v0
+    const { result: r1, sent: sent1 } = request<string>(
+      'daemon.info',
+      null,
+      null,
+      1
+    );
+
+    const sent = Promise.all([sent0, sent1]).then(() => {});
+
+    const result = Promise.race<Promise<RequestResult<ProtocolVersion>>>([
+      r0.then(() => ({ value: 0 })),
+      r1.then(() => ({ value: 1 })),
+    ]);
+
+    return { sent, result };
+  }
+
   return {
     request,
     events,
     core,
     daemon,
+    detectProtocolVersion,
   };
 }

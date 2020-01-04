@@ -50,6 +50,34 @@ function testVersion(
     return RPC.promise;
   }
 
+  const detectedProtocol = SharedPromise<ProtocolVersion>();
+
+  test('Detect Version', async () => {
+    try {
+      const rpc = await connect();
+
+      const { sent, result } = rpc.detectProtocolVersion();
+
+      await sent;
+
+      const res = await result;
+
+      if (isRPCError(res)) {
+        detectedProtocol.reject(new Error(res.error?.toString()));
+      } else {
+        detectedProtocol.resolve(res.value);
+      }
+    } catch (e) {
+      detectedProtocol.reject(e);
+    }
+  });
+
+  if (protocolVersion !== undefined) {
+    test('Detected version matches expected', async () => {
+      expect(await detectedProtocol.promise).toBe(protocolVersion);
+    });
+  }
+
   test('Get Version', async () => {
     const rpc = await connect();
 
