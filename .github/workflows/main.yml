@@ -125,7 +125,7 @@ jobs:
 
         # Run Tests
       - name: Test with Coverage
-        run: 'yarn --color test --ci --coverage --colors || :'
+        run: 'yarn test --ci --coverage --colors || :'
         env:
           DELUGE1_PORT: 8999
           DELUGE2_PORT: 9001
