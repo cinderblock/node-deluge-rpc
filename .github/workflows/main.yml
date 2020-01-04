@@ -111,9 +111,9 @@ jobs:
         run: sudo netstat --listening --program --numeric --tcp
 
       - name: Deluged 1 Logs
-        run: egrep --color=always '|ERROR' deluge1.log
+        run: egrep --color=always '|DEBUG' deluge1.log
       - name: Deluged 2 Logs
-        run: egrep --color=always '|ERROR' deluge2.log
+        run: egrep --color=always '|DEBUG' deluge2.log
 
       - name: Build
         run: yarn install
