@@ -22,12 +22,13 @@ function testVersion(
   const socket = SharedPromise<tls.TLSSocket>();
 
   const connected = SharedPromise();
+  const securelyConnected = SharedPromise();
 
   const RPC = SharedPromise<ReturnType<typeof DelugeRPC>>();
 
-  test('Connect', async () => {
+  test('Can connect to daemon', async () => {
     const s = tls.connect(port, host, options);
-    s.on('secureConnect', connected.resolve);
+    s.on('connect', connected.resolve);
     s.on('error', connected.reject);
 
     socket.resolve(s);
@@ -35,7 +36,17 @@ function testVersion(
     await connected.promise;
   });
 
-  test('Wrap with Daemon', async () => {
+  test('Can connect to daemon securely', async () => {
+    const s = await socket.promise;
+    s.on('secureConnect', securelyConnected.resolve);
+    s.on('error', securelyConnected.reject);
+
+    if (!s.connecting) throw Error('Too slow!');
+
+    await securelyConnected.promise;
+  });
+
+  test('Can wrap a socket', async () => {
     const d = DelugeRPC(await socket.promise, {
       protocolVersion,
     });
@@ -46,13 +57,13 @@ function testVersion(
   });
 
   async function connect() {
-    await connected.promise;
+    await securelyConnected.promise;
     return RPC.promise;
   }
 
   const detectedProtocol = SharedPromise<ProtocolVersion>();
 
-  test('Detect Version', async () => {
+  test('Can detect protocol version', async () => {
     try {
       const rpc = await connect();
 
@@ -73,12 +84,12 @@ function testVersion(
   });
 
   if (protocolVersion !== undefined) {
-    test('Detected version matches expected', async () => {
+    test('Detected version matches expected: ' + protocolVersion, async () => {
       expect(await detectedProtocol.promise).toBe(protocolVersion);
     });
   }
 
-  test('Get Version', async () => {
+  test('Can run `daemon.info`', async () => {
     const rpc = await connect();
 
     const { sent, result } = rpc.daemon.info();
