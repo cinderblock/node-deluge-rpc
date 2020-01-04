@@ -61,6 +61,10 @@ function testVersion(
     console.log('res');
     console.log(res);
   });
+
+  afterAll(async () => {
+    (await socket.promise).end();
+  });
 }
 
 const port1 =
