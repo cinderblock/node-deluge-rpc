@@ -37,6 +37,7 @@
     "rpc",
     "snakecase",
     "tacklind",
+    "virtualenv",
     "webseeds"
   ],
   "flagWords": []
