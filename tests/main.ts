@@ -68,6 +68,8 @@ function testVersion(
   });
 }
 
+// TODO: read from config.js instead of environment variables?
+
 const port1 =
   Number(process.env.DELUGE1_PORT || process.env.DELUGE_PORT) || 58846;
 
