@@ -17,6 +17,8 @@
     "interop",
     "kwargs",
     "libtorrent",
+    "logfile",
+    "loglevel",
     "mkconfig",
     "NOPUBLISH",
     "npmjs",
