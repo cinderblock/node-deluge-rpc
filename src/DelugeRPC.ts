@@ -5,9 +5,9 @@ import { Socket } from 'net';
 import { promisify } from 'util';
 import { readFile } from 'fs';
 
-const camelCaseKeys = require('camelcase-keys-deep');
-const snakeCaseKeys = require('snakecase-keys');
-const pako = require('pako');
+import camelCaseKeys from 'camelcase-keys-deep';
+import snakeCaseKeys from 'snakecase-keys';
+import pako from 'pako';
 
 import {
   encode,
@@ -16,11 +16,29 @@ import {
   RencodableObject,
   RencodableArray,
 } from 'python-rencode';
+
 import nextPowerOfTwo from 'smallest-power-of-two';
+
+import { SharedPromise } from './utils/SharedPromise';
+import { AllPromises } from './utils/AllPromises';
+
+import {
+  Awaitable,
+  AwaitableRencodableData,
+  ObjectAwaitableRencodable,
+  ArrayAwaitableRencodable,
+} from './utils/Awaitable';
+
+export {
+  Awaitable,
+  AwaitableRencodableData,
+  ObjectAwaitableRencodable,
+  ArrayAwaitableRencodable,
+} from './utils/Awaitable';
 
 const readFilePromise = promisify(readFile);
 
-function getDebug(d: boolean | Function | undefined) {
+function getDebug(d: boolean | ((...args: any[]) => void) | undefined) {
   return typeof d == 'function'
     ? d
     : d === true
@@ -28,22 +46,39 @@ function getDebug(d: boolean | Function | undefined) {
     : () => {};
 }
 
-type Awaitable<T> = T | Promise<T>;
-export type AwaitableRencodableData =
-  | Awaitable<RencodableData>
-  | ArrayAwaitableRencodable
-  | ObjectAwaitableRencodable;
-
-export interface ObjectAwaitableRencodable {
-  [k: string]: AwaitableRencodableData;
-  [k: number]: AwaitableRencodableData;
-}
-export interface ArrayAwaitableRencodable
-  extends Array<AwaitableRencodableData> {}
-
 export async function loadFile(file: string) {
   return (<Buffer>await readFilePromise(file)).toString('base64');
 }
+
+/**
+ * @experimental Subject to change
+ */
+export type RPCError = RencodableData;
+
+export type ErrorResult = { error: RPCError };
+
+export type SuccessResult<
+  RPCResponse extends RencodableData = RencodableData
+> = { value: RPCResponse };
+
+export function isRPCError<RPCResponse extends RencodableData = RencodableData>(
+  result: SuccessResult<RPCResponse> | ErrorResult
+): result is ErrorResult {
+  return !!(result as ErrorResult).error;
+}
+
+/**
+ * @future Timeout might be added as a response type
+ */
+export type RequestResult<
+  RPCResponse extends RencodableData = RencodableData
+> = SuccessResult<RPCResponse> | ErrorResult;
+
+/**
+ * Deluge ^1.0.0 uses version 0 (default)
+ * Deluge ^2.0.0 uses version 1
+ */
+export type ProtocolVersion = 0 | 1;
 
 /**
  * Create an API attached to a specified socket
@@ -60,21 +95,14 @@ export default function DelugeRPC(
      * True makes a generic one that prints to terminal.
      * False does nothing
      */
-    debug?: boolean | Function;
+    debug?: boolean | ((...args: any[]) => void);
     /**
      * Which Deluge protocol should we use
      *
      * Deluge ^1.0.0 uses version 0 (default)
      * Deluge ^2.0.0 uses version 1
      */
-    protocolVersion?: 0 | 1;
-    /**
-     * Changes the behavior of the returned promises.
-     *
-     * If true, promises will never throw.
-     * All functions return an object that has one of error or response set as appropriate
-     */
-    resolveErrorResponses?: boolean;
+    protocolVersion?: ProtocolVersion;
     /**
      * Convert all responses from Deluge to camelCase
      *
@@ -87,13 +115,11 @@ export default function DelugeRPC(
   const debug = getDebug(options.debug);
   // Default protocol version 0
   const protocolVersion = options.protocolVersion || 0;
-  // Default false-ish
-  const resolveErrorResponses = options.resolveErrorResponses;
-  // Default true
-  const camelCaseResponses =
-    options.camelCaseResponses === undefined || options.camelCaseResponses;
 
-  // Internal receive buffer I n case multi-part messages are received.
+  // Default true
+  const camelCaseResponses = options.camelCaseResponses ?? true;
+
+  // Internal receive buffer in case multi-part messages are received.
   let buffer = Buffer.allocUnsafe(0);
   let currentLength = 0;
 
@@ -113,15 +139,32 @@ export default function DelugeRPC(
 
   // Once we process some data, we need a way to remove it from the current buffer
   function removeBufferBeginning(size: number) {
+    // Buffer.copy() goes from left to right so won't overwrite itself
     buffer.copy(buffer, 0, size, currentLength);
     currentLength -= size;
   }
 
+  type ResponseResolver = {
+    /**
+     * Handle error when decoding response
+     *
+     * @future timeout handling?
+     */
+    reject: (error?: Error) => void;
+    /**
+     * Handle decoded response
+     */
+    resolve: (response: RequestResult) => void;
+  };
+
   // Request/Response pairs to and from Deluge are matched with an integer index
   let nextRequestId = 0;
+
+  const resolverIdLimit = 300;
+
   // Buffer of pending response handlers
   const resolvers: {
-    [x: number]: { reject: Function; resolve: Function };
+    [x: number]: ResponseResolver;
   } = {};
 
   /**
@@ -129,7 +172,8 @@ export default function DelugeRPC(
    */
   function nextId() {
     const ret = nextRequestId++;
-    if (nextRequestId >= 1 << (8 * 4)) nextRequestId = 0;
+    // Trap to some smaller positive integer to prevent resolve array from blowing up in size
+    if (nextRequestId >= resolverIdLimit) nextRequestId = 0;
     return ret;
   }
 
@@ -141,27 +185,6 @@ export default function DelugeRPC(
     const ret = resolvers[id];
     delete resolvers[id];
     return ret;
-  }
-
-  /**
-   * Save a new resolve/reject pair to the store
-   * @param id deluge response ID
-   * @param p reject/resolve pair
-   */
-  function saveResolvers(
-    id: number,
-    p: { reject: Function; resolve: Function }
-  ) {
-    resolvers[id] = !resolveErrorResponses
-      ? p
-      : {
-          resolve: (response: RencodableData) => {
-            p.resolve({ response });
-          },
-          reject: (error: Error) => {
-            p.resolve({ error });
-          },
-        };
   }
 
   // Event emitter to pass on asynchronous events (among others)
@@ -183,11 +206,12 @@ export default function DelugeRPC(
     const [type, id, data] = <[number, number | string, RencodableData]>payload;
 
     if (type == RESPONSE) {
-      getResolvers(<number>id).resolve(data);
+      getResolvers(<number>id).resolve({ value: parseResponse(data) });
     } else if (type == ERROR) {
-      getResolvers(<number>id).reject(data);
+      // The API says data is just the exception type but I think it includes all of it
+      getResolvers(<number>id).resolve({ error: parseResponse(data) });
     } else if (type == EVENT) {
-      events.emit('delugeEvent', { name: id, data });
+      events.emit('delugeEvent', { name: id, data: parseResponse(data) });
     } else {
       events.emit('decodingError', 'Invalid payload type received:', type);
     }
@@ -196,6 +220,8 @@ export default function DelugeRPC(
   // When we get some data from the socket connection to the server
   socket.on('data', data => {
     appendToIncomingBuffer(data);
+
+    // We automatically detect which version we're talking to upon any response because messages have predictable headers
 
     // Can't do anything if the current length is too short to even hold a type marker
     while (currentLength > 0) {
@@ -260,17 +286,23 @@ export default function DelugeRPC(
    * @param data Encodable data to be sent
    * @param cb Callback to call when data actually sent
    */
-  function rawSend(data: RencodableData, cb: Function) {
+  function rawSend(
+    data: RencodableData,
+    cb: (err?: Error) => void,
+    overrideVersion?: 0 | 1
+  ) {
     // Encode the data as Deluge expects
     let buff = pako.deflate(encode(data));
 
-    if (protocolVersion == 0) {
+    if (overrideVersion === undefined) overrideVersion = protocolVersion;
+
+    if (overrideVersion == 0) {
       // Don't need to do anything. Just raw send encoded buffer.
-    } else if (protocolVersion == 1) {
+    } else if (overrideVersion == 1) {
       // TODO: Test this with deluge dev version
       const header = Buffer.allocUnsafe(5);
       // Add protocol version header
-      header.writeUInt8(protocolVersion, 0);
+      header.writeUInt8(overrideVersion, 0);
       // And payload length
       header.writeUInt32BE(buff.length, 1);
       // Join the two
@@ -284,73 +316,21 @@ export default function DelugeRPC(
     socket.write(buff, cb);
   }
 
-  // Check if data is an object we want to parse
-  function isObject(x: any) {
-    if (typeof x !== 'object') return false;
-    if (x === null) return false;
-
-    // Might as well keep these
-    if (x instanceof RegExp) return false;
-    if (x instanceof Error) return false;
-    if (x instanceof Date) return false;
-
-    return true;
-  }
-
-  // Resolve when all Promises deeply in objects or arrays resolve
-  async function allPromises(
-    data: AwaitableRencodableData
-  ): Promise<RencodableData> {
-    // Resolve any promise or get raw data
-    const dataResolved = await data;
-
-    // Even if dataResolved is a function, null, or some other non RencodableData, let something else error
-    if (!isObject(dataResolved)) return <RencodableData>dataResolved;
-
-    if (Array.isArray(dataResolved)) {
-      // If we're checking an array, recurse and resolve everything inside
-      return Promise.all(
-        (<ArrayAwaitableRencodable>dataResolved).map(allPromises)
-      );
-    }
-
-    // At this point we know we'll be returning some object
-    const ret: RencodableObject = {};
-
-    const keys = Object.keys(<ObjectAwaitableRencodable>dataResolved);
-    for (let i = 0; i < keys.length; i++) {
-      ret[keys[i]] = await allPromises(
-        (<ObjectAwaitableRencodable>dataResolved)[keys[i]]
-      );
-    }
-
-    return ret;
-  }
-
   // Expected response of default API
-  type SentDefault = undefined;
-  type ResultDefault<T> = T;
-
-  // Expected response of alternate API
-  type SentAlternate = undefined | { error: Error };
-  type ResultAlternate<T> = { error: [] | {} | string } | { response: T };
-
-  // TODO: See if we can return Default or Alternate response types based on function arguments
-  type Sent = SentDefault | SentAlternate;
-  type Result<T> = ResultDefault<T> | ResultAlternate<T>;
+  type RequestSent = void;
 
   // TODO: T must be one of RencodableData
-  type ResponseType<T> = {
-    result: Promise<Result<T>>;
-    sent: Promise<Sent>;
+  type Request<T extends RencodableData> = {
+    result: Promise<RequestResult<T>>;
+    sent: Promise<RequestSent>;
   };
 
   // Handle a response. cameCase it if needed and possible
-  function parseResponse(data: RencodableData) {
+  function parseResponse(data: RencodableData): RencodableData {
     if (!camelCaseResponses) return data;
     // Try catch is easy way to handle
     try {
-      return camelCaseKeys(data, { deep: true });
+      return (camelCaseKeys as any)(data, { deep: true });
     } catch (e) {}
     return data;
   }
@@ -363,39 +343,37 @@ export default function DelugeRPC(
    * @param kwargs Any named arguments to be passed to the RPC method
    * @returns An object with two Promises. One for if the data was sent on the wire. The second if the response has been received.
    */
-  function request(
+  function request<T extends RencodableData = RencodableData>(
     method: Awaitable<string>,
     args:
       | ArrayAwaitableRencodable
       | ObjectAwaitableRencodable
-      | Awaitable<undefined> = [],
-    kwargs: ObjectAwaitableRencodable | Awaitable<undefined> = {}
-  ): ResponseType<RencodableData> {
+      | Awaitable<null> = [],
+    kwargs: ObjectAwaitableRencodable | Awaitable<null> = {},
+    protocolVersion?: ProtocolVersion
+  ): Request<T> {
     // Get next response ID
     const id = nextId();
 
     // Create the result promise that will be resolved when we receive the response from the server
-    const result = new Promise<RencodableData>((resolve, reject) => {
-      saveResolvers(id, {
-        resolve: (data: RencodableData) => resolve(parseResponse(data)),
+    const result = new Promise<RequestResult<T>>((resolve, reject) => {
+      resolvers[id] = {
+        resolve: resolve as () => RequestResult<RencodableData>,
         reject,
-      });
+      };
     });
 
     // Create the sent promise that will be resolved when the message is sent on the wire.
-    const sent = new Promise<Sent>(async (resolve, reject) => {
-      // Handle alternate API
-      reject = resolveErrorResponses ? resolve : reject;
-
+    const sent = new Promise<RequestSent>(async (resolve, reject) => {
       // DEBATE: Should we also reject our result?
       // reject = (...args) => {getResolvers(id).reject(...args); reject(...args);};
 
       // TODO: confirm this works as intended
       socket.once('error', reject);
 
-      let argsRes = (await allPromises(args)) || [];
-      let kwargsRes = (await allPromises(kwargs)) || {};
-      const methodRes = await allPromises(method);
+      let argsRes = (await AllPromises(args)) || [];
+      let kwargsRes = (await AllPromises(kwargs)) || {};
+      const methodRes = await AllPromises(method);
 
       // Handle calls with no list arguments
       if (!Array.isArray(argsRes)) {
@@ -404,11 +382,15 @@ export default function DelugeRPC(
       }
 
       try {
-        rawSend([[id, methodRes, argsRes, kwargsRes]], () => {
-          // Clean up after ourselves
-          socket.removeListener('error', reject);
-          resolve();
-        });
+        rawSend(
+          [[id, methodRes, argsRes, kwargsRes]],
+          () => {
+            // Clean up after ourselves
+            socket.removeListener('error', reject);
+            resolve();
+          },
+          protocolVersion
+        );
       } catch (e) {
         // Probably an error resolving all of the passed arguments
         socket.removeListener('error', reject);
@@ -439,10 +421,10 @@ export default function DelugeRPC(
   }
 
   async function handleOptions(options: AwaitableRencodableData) {
-    const opts = await allPromises(options);
+    const opts = await AllPromises(options);
     if (typeof opts != 'object' || opts === null) return opts;
     return <RencodableObject | RencodableArray>(
-      snakeCaseKeys(opts, { deep: true })
+      (snakeCaseKeys as any)(opts, { deep: true })
     );
   }
 
@@ -451,7 +433,7 @@ export default function DelugeRPC(
     addTorrentFile: (
       filename: Awaitable<string>,
       filedump: Awaitable<FileDump>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>
     ) =>
       // TODO: Return type
       request('core.add_torrent_file', [
@@ -462,8 +444,8 @@ export default function DelugeRPC(
 
     addTorrentUrl: (
       url: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>,
-      options: Awaitable<{ headers?: Awaitable<FlatMap> } | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>,
+      options: Awaitable<{ headers?: Awaitable<FlatMap> } | null>
     ) =>
       // TODO: Return type
       request(
@@ -471,12 +453,12 @@ export default function DelugeRPC(
         [url, handleOptions(torrentOptions)],
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<undefined>
+          | Awaitable<null>
       ),
 
     addTorrentMagnet: (
       uri: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>
     ) =>
       // TODO: Return type
       request('core.add_torrent_magnet', [uri, handleOptions(torrentOptions)]),
@@ -525,11 +507,11 @@ export default function DelugeRPC(
 
     pauseAllTorrents: () =>
       // TODO: Return type
-      <ResponseType<undefined>>request('core.pause_all_torrents'),
+      <Request<null>>request('core.pause_all_torrents'),
 
     resumeAllTorrents: () =>
       // TODO: Return type
-      <ResponseType<undefined>>request('core.resume_all_torrents'),
+      <Request<null>>request('core.resume_all_torrents'),
 
     resumeTorrent: (torrentIds: Awaitable<Awaitable<string>[]>) =>
       // TODO: Return type
@@ -546,7 +528,7 @@ export default function DelugeRPC(
         [torrentId, keys] as ArrayAwaitableRencodable,
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<undefined>
+          | Awaitable<null>
       ),
 
     // TODO: Return type
@@ -560,7 +542,7 @@ export default function DelugeRPC(
         [filterDict, keys] as ArrayAwaitableRencodable,
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<undefined>
+          | Awaitable<null>
       ),
 
     getFilterTree: (options: {
@@ -568,12 +550,15 @@ export default function DelugeRPC(
       hideCats?: Awaitable<Awaitable<string>[]>;
     }) =>
       // TODO: Return type
-      request('core.get_filter_tree', handleOptions(
-        options as AwaitableRencodableData
-      ) as ObjectAwaitableRencodable | Awaitable<undefined>),
+      request(
+        'core.get_filter_tree',
+        handleOptions(options as AwaitableRencodableData) as
+          | ObjectAwaitableRencodable
+          | Awaitable<null>
+      ),
 
     getSessionState: () =>
-      request('core.get_session_state') as ResponseType<string[]>,
+      request('core.get_session_state') as Request<string[]>,
 
     // TODO: Return type
     getConfig: () => request('core.get_config'),
@@ -590,32 +575,31 @@ export default function DelugeRPC(
       // TODO: Return type
       request('core.set_config', [config]),
 
-    getListenPort: () =>
-      request('core.get_listen_port') as ResponseType<number>,
+    getListenPort: () => request('core.get_listen_port') as Request<number>,
 
     getNumConnections: () =>
-      request('core.get_num_connections') as ResponseType<number>,
+      request('core.get_num_connections') as Request<number>,
 
     getAvailablePlugins: () =>
-      request('core.get_available_plugins') as ResponseType<string[]>,
+      request('core.get_available_plugins') as Request<string[]>,
 
     getEnabledPlugins: () =>
-      request('core.get_enabled_plugins') as ResponseType<string[]>,
+      request('core.get_enabled_plugins') as Request<string[]>,
 
     enablePlugin: (plugin: Awaitable<string>) =>
-      request('core.enable_plugin', [plugin]) as ResponseType<boolean>,
+      request('core.enable_plugin', [plugin]) as Request<boolean>,
 
     disablePlugin: (plugin: Awaitable<string>) =>
-      request('core.disable_plugin', [plugin]) as ResponseType<boolean>,
+      request('core.disable_plugin', [plugin]) as Request<boolean>,
 
     forceRecheck: (torrentIds: Awaitable<Awaitable<string>[]>) =>
       request('core.force_recheck', [
         torrentIds,
-      ] as ArrayAwaitableRencodable) as ResponseType<boolean>,
+      ] as ArrayAwaitableRencodable) as Request<boolean>,
 
     setTorrentOptions: (
       torrentIds: Awaitable<Awaitable<string>[]>,
-      torrentOptions: Awaitable<TorrentOptions | undefined>
+      torrentOptions: Awaitable<TorrentOptions | null>
     ) =>
       // TODO: Return type
       request('core.set_torrent_options', [
@@ -694,7 +678,7 @@ export default function DelugeRPC(
   };
 
   // Final API with camelCase or snake_case
-  // We could do this more programmatically but this help tsc more
+  // We could do this more programmatically but this helps the TypeScript Compiler more
   const core = {
     add_torrent_file: camelCore.addTorrentFile,
     addTorrentFile: camelCore.addTorrentFile,
@@ -792,10 +776,38 @@ export default function DelugeRPC(
     login: camelDaemon.login,
   };
 
+  function detectProtocolVersion(): Request<ProtocolVersion> {
+    // This will result in an authentication error on v0 and be ignored on v1
+    const { result: r0, sent: sent0 } = request<string>(
+      'daemon.info',
+      null,
+      null,
+      0
+    );
+
+    // This will result in success on v1 and be ignored on v0
+    const { result: r1, sent: sent1 } = request<string>(
+      'daemon.info',
+      null,
+      null,
+      1
+    );
+
+    const sent = Promise.all([sent0, sent1]).then(() => {});
+
+    const result = Promise.race<Promise<RequestResult<ProtocolVersion>>>([
+      r0.then(() => ({ value: 0 })),
+      r1.then(() => ({ value: 1 })),
+    ]);
+
+    return { sent, result };
+  }
+
   return {
     request,
     events,
     core,
     daemon,
+    detectProtocolVersion,
   };
 }

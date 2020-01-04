@@ -1,8 +1,10 @@
 {
-  "files": ["src/DelugeRPC.ts"],
+  "include": ["src/**/*.ts"],
   "compilerOptions": {
     "module": "commonjs",
     "lib": ["es2015"],
+    "baseUrl": ".",
+    "outDir": "dist",
     "strict": true,
     "esModuleInterop": true
   }

@@ -2,8 +2,7 @@
   "files.exclude": {
     "node_modules/": true,
     "coverage/": true,
-    "src/DelugeRPC.js": true,
-    "src/DelugeRPC.d.ts": true
+    "dist/": true
   },
   "editor.formatOnSave": true,
   "files.insertFinalNewline": false
