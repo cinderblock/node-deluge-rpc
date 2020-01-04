@@ -2,14 +2,15 @@
   "version": "0.1",
   "language": "en",
   "ignorePaths": [
-    ".git/",
-    "node_modules/",
-    "coverage/",
-    "dist/",
+    ".git",
+    "node_modules",
+    "coverage",
+    "dist",
     "yarn.lock",
     "config.js"
   ],
   "words": [
+    "autodetect",
     "camelcase",
     "cinderblock",
     "coverallsapp",
