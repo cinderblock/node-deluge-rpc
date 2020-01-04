@@ -6,38 +6,6 @@ import DelugeRPC from '../src/DelugeRPC.js';
 
 import { SharedPromise } from './utils/SharedPromise';
 
-const port1 =
-  Number(process.env.DELUGE1_PORT || process.env.DELUGE_PORT) || 58846;
-
-const host1 =
-  process.env.DELUGE1_HOST || process.env.DELUGE_HOST || 'localhost';
-
-const version1 =
-  (process.env.DELUGE1_VERSION || process.env.DELUGE_VERSION) ?? 0 ? 1 : 0;
-
-const port2 = Number(process.env.DELUGE2_PORT);
-const host2 = process.env.DELUGE2_HOST || 'localhost';
-
-const options = {
-  rejectUnauthorized: false,
-};
-
-testDeluge({
-  connect: { host: host1, port: port1 },
-  options,
-  expectedVersion: version1,
-  name: port2 ? 'Deluge 1.x' : undefined,
-});
-
-if (port2) {
-  testDeluge({
-    connect: { host: host2, port: port2 },
-    options,
-    expectedVersion: 1,
-    name: 'Deluge 2.x',
-  });
-}
-
 type Options = {
   connect: { host: string; port: number };
   options?: tls.ConnectionOptions;
@@ -89,5 +57,37 @@ function testDeluge({
 
     console.log('res');
     console.log(res);
+  });
+}
+
+const port1 =
+  Number(process.env.DELUGE1_PORT || process.env.DELUGE_PORT) || 58846;
+
+const host1 =
+  process.env.DELUGE1_HOST || process.env.DELUGE_HOST || 'localhost';
+
+const version1 =
+  (process.env.DELUGE1_VERSION || process.env.DELUGE_VERSION) ?? 0 ? 1 : 0;
+
+const port2 = Number(process.env.DELUGE2_PORT);
+const host2 = process.env.DELUGE2_HOST || 'localhost';
+
+const options = {
+  rejectUnauthorized: false,
+};
+
+testDeluge({
+  connect: { host: host1, port: port1 },
+  options,
+  expectedVersion: version1,
+  name: port2 ? 'Deluge 1.x' : undefined,
+});
+
+if (port2) {
+  testDeluge({
+    connect: { host: host2, port: port2 },
+    options,
+    expectedVersion: 1,
+    name: 'Deluge 2.x',
   });
 }
