@@ -98,7 +98,7 @@ jobs:
         run: virtualenv --system-site-packages --python=/usr/bin/python3 deluge-2-env
 
       - name: Install Deluge 2
-        run: deluge-2-env/bin/pip install git+git://deluge-torrent.org/deluge.git@master tox tox-venv -y
+        run: deluge-2-env/bin/pip install git+git://deluge-torrent.org/deluge.git@master
 
       - name: "Debug: List Deluge 2's files, post install"
         working-directory: deluge-2-env
