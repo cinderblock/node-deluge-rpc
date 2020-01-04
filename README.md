@@ -2,8 +2,8 @@
 
 Node.js API for Deluge's RPC API
 
-[![](https://github.com/cinderblock/node-deluge-rpc/workflows/Main/badge.svg?branch=rework-api)](https://github.com/cinderblock/node-deluge-rpc/actions?query=branch%3Arework-api)
-[![Coverage Status](https://coveralls.io/repos/github/cinderblock/node-deluge-rpc/badge.svg?branch=rework-api)](https://coveralls.io/github/cinderblock/node-deluge-rpc?branch=rework-api)
+[![](https://github.com/cinderblock/node-deluge-rpc/workflows/Main/badge.svg?branch=master)](https://github.com/cinderblock/node-deluge-rpc/actions?query=branch%3Amaster)
+[![Coverage Status](https://coveralls.io/repos/github/cinderblock/node-deluge-rpc/badge.svg?branch=master)](https://coveralls.io/github/cinderblock/node-deluge-rpc?branch=master)
 
 ## Setup
 
