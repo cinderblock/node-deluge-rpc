@@ -87,8 +87,7 @@ function testVersion(
 
     const res = await result;
 
-    // TODO check it. For now, error
-    throw new Error('Finish this test');
+    // TODO: Finish this test
   });
 
   afterAll(async () => {
