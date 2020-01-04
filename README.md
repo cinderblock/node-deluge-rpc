@@ -62,7 +62,7 @@ Any named arguments will be converted to Deluge's snake_keys convention.
 
 ## Change Log
 
-### v0.5.0
+### v0.5.0 (WIP)
 
 #### Breaking changes
 
