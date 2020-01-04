@@ -45,7 +45,12 @@ type Options = {
   name?: string;
 };
 
-function testDeluge({ connect, options, expectedVersion, name }: Options) {
+function testDeluge({
+  connect: { host, port },
+  options,
+  expectedVersion,
+  name,
+}: Options) {
   name += ' - ';
 
   const socket = SharedPromise<tls.TLSSocket>();
@@ -56,7 +61,7 @@ function testDeluge({ connect, options, expectedVersion, name }: Options) {
 
   test(name + 'Connect', async () => {
     socket.resolve(
-      tls.connect(port1, host1, options).on('secureConnect', connected.resolve)
+      tls.connect(port, host, options).on('secureConnect', connected.resolve)
     );
 
     await connected.promise;
