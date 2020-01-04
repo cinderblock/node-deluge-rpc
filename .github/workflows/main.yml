@@ -84,7 +84,7 @@ jobs:
 
       - name: "Debug: List Deluge v1.3's files, post install"
         working-directory: deluge-1.3-env
-        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\*/ \) -print -prune -o -type f -print | tee /tmp/build.list
+        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\* \) -print -prune -o -type f -print | tee /tmp/build.list
 
       - name: Start Deluge 1.3 Daemon
         run: deluge-1.3-env/bin/deluged --port=8999 --config=deluge1 --loglevel debug --logfile deluge1.log
@@ -97,7 +97,7 @@ jobs:
 
       - name: "Debug: List Deluge 2's files, post install"
         working-directory: deluge-2-env
-        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\*/ \) -print -prune -o -type f -print | tee /tmp/build.list
+        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\* \) -print -prune -o -type f -print | tee /tmp/build.list
 
       - name: Start Deluge 2 Daemon
         run: deluge-2-env/bin/deluged --port=9001 --config=deluge2 --loglevel debug --logfile deluge2.log
@@ -119,7 +119,7 @@ jobs:
         run: yarn install
 
       - name: 'Debug: List post build files'
-        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\*/ \) -print -prune -o -type f -print | tee /tmp/build.list
+        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\* \) -print -prune -o -type f -print | tee /tmp/build.list
 
       - name: Test with Coverage
         run: yarn run test --ci --coverage
@@ -130,7 +130,7 @@ jobs:
           # DELUGE2_HOST: localhost
 
       - name: 'Debug: List post Coverage files'
-        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\*/ \) -print -prune -o -type f -print | tee /tmp/coverage.list
+        run: find * \( -path node_modules -o -path .git -o -name __pycache__ -o -path \*/site-packages/\* \) -print -prune -o -type f -print | tee /tmp/coverage.list
 
       - name: 'Debug: Coverage diff'
         run: 'diff -U 0 /tmp/build.list /tmp/coverage.list || :'
