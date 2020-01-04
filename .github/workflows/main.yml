@@ -103,12 +103,12 @@ jobs:
         run: deluge-2-env/bin/deluged --port=9001 --config=deluge2 --loglevel info --logfile deluge2.log
 
       - name: Listening ports
-        run: sudo netstat -lpnt
+        run: sudo netstat --listening --program --numeric --tcp
 
       - run: sleep 30
 
       - name: Listening ports
-        run: sudo netstat -lpnt
+        run: sudo netstat --listening --program --numeric --tcp
 
       - name: Deluged 1 Logs
         run: cat deluge1.log
