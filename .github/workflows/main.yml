@@ -118,6 +118,11 @@ jobs:
 
       - name: Test with Coverage
         run: yarn run test --ci --coverage
+        env:
+          DELUGE1_PORT: 8999
+          DELUGE2_PORT: 9001
+          # DELUGE1_HOST: localhost
+          # DELUGE2_HOST: localhost
 
       - name: 'Debug: List post Coverage files'
         run: find * \( -path node_modules -o -path .git \) -print -prune -o -type f -print | tee /tmp/coverage.list
