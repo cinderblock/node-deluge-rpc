@@ -107,7 +107,7 @@ jobs:
       - name: Start Deluge 2 Daemon
         run: deluge-2-env/bin/deluged --port=9001 --config=deluge2 --loglevel debug --logfile deluge2.log
 
-        # JavaScript Deps
+        # JavaScript Dependencies
       - name: Build
         run: yarn install --color
 
