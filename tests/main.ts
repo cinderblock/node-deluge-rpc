@@ -41,8 +41,6 @@ function testVersion(
     s.on('secureConnect', securelyConnected.resolve);
     s.on('error', securelyConnected.reject);
 
-    if (!s.connecting) throw Error('Too slow!');
-
     await securelyConnected.promise;
   });
 
