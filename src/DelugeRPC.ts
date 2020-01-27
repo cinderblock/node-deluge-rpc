@@ -63,11 +63,9 @@ export type ErrorResultV1 = {
 
 export type ErrorResult = ErrorResultV0 | ErrorResultV1;
 
-export type SuccessResult<
-  RPCResponse extends RencodableData = RencodableData
-> = { value: RPCResponse };
+export type SuccessResult<RPCResponse extends RencodableData> = RPCResponse;
 
-export function isRPCError<RPCResponse extends RencodableData = RencodableData>(
+export function isRPCError<RPCResponse extends RencodableData>(
   result: SuccessResult<RPCResponse> | ErrorResult,
 ): result is ErrorResult {
   return !!(result as ErrorResult).error;
@@ -223,7 +221,7 @@ export default function DelugeRPC(
     if (type == RESPONSE) {
       const [requestId, data] = payload as [number, RencodableData];
 
-      getResolvers(requestId).resolve({ value: parseResponse(data) });
+      getResolvers(requestId).resolve(parseResponse(data));
     } else if (type == ERROR) {
       if (protocolVersion === 0) {
         const [requestId, error, ...extra] = payload as [number, string];
@@ -470,8 +468,7 @@ export default function DelugeRPC(
       filedump: Awaitable<FileDump>,
       torrentOptions: Awaitable<TorrentOptions | null> = null,
     ) =>
-      // TODO: Return type
-      request('core.add_torrent_file', [
+      request<string>('core.add_torrent_file', [
         filename,
         handleFiledump(filedump),
         handleOptions(torrentOptions),
@@ -709,7 +706,7 @@ export default function DelugeRPC(
     info: () => request('daemon.info'),
     shutdown: () => request('daemon.shutdown'),
     login: (username: Awaitable<string>, password: Awaitable<string>) =>
-      request(
+      request<number>(
         'daemon.login',
         [username, password],
         // Deluge 2.0 needs this to be non-null. 1.0 doesn't care.
