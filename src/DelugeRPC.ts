@@ -479,8 +479,7 @@ export default function DelugeRPC(
       torrentOptions: Awaitable<TorrentOptions | null> = null,
       options: Awaitable<{ headers?: Awaitable<FlatMap> } | null> = null,
     ) =>
-      // TODO: Return type
-      request(
+      request<string>(
         'core.add_torrent_url',
         [url, handleOptions(torrentOptions)],
         handleOptions(options as AwaitableRencodableData) as
