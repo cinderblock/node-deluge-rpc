@@ -74,7 +74,7 @@ function testVersion(
       if (isRPCError(res)) {
         detectedProtocol.reject(new Error(res.error?.toString()));
       } else {
-        detectedProtocol.resolve(res.value);
+        detectedProtocol.resolve(res);
       }
     } catch (e) {
       detectedProtocol.reject(e);
