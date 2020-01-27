@@ -674,7 +674,12 @@ export default function DelugeRPC(
     info: () => request('daemon.info'),
     shutdown: () => request('daemon.shutdown'),
     login: (username: Awaitable<string>, password: Awaitable<string>) =>
-      request('daemon.login', [username, password]),
+      request(
+        'daemon.login',
+        [username, password],
+        // Deluge 2.0 needs this to be non-null. 1.0 doesn't care.
+        { client_version: 'deluge-rpc-socket' },
+      ),
   };
 
   // Final API with camelCase or snake_case
