@@ -70,6 +70,10 @@ export function isRPCError<RPCResponse extends RencodableData = RencodableData>(
   return !!(result as ErrorResult).error;
 }
 
+export function isRPCErrorV1(error: ErrorResult): error is ErrorResult {
+  return !!(error as ErrorResultV1).message;
+}
+
 /**
  * @future Timeout might be added as a response type
  */
