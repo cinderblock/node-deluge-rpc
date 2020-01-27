@@ -231,14 +231,14 @@ export default function DelugeRPC(
         // The API says data is just the exception type but I think it includes all of it
         getResolvers(requestId).resolve({ error: parseResponse(error), extra });
       } else if (protocolVersion === 1) {
-        const [id, exceptionType, exceptionMsg, traceback] = payload as [
+        const [requestId, exceptionType, exceptionMsg, traceback] = payload as [
           number,
           string,
           string[],
           {},
         ];
 
-        getResolvers(id).resolve({
+        getResolvers(requestId).resolve({
           error: exceptionType,
           message: exceptionMsg,
           traceback,
@@ -835,10 +835,18 @@ export default function DelugeRPC(
 
     const sent = Promise.all([sent0, sent1]).then(() => {});
 
+    function cleanup0() {
+      // TODO: Cleanup after
+    }
+
+    function cleanup1() {}
+
     const result = Promise.race<Promise<RequestResult<ProtocolVersion>>>([
-      r0.then(() => ({ value: 0 })),
-      r1.then(() => ({ value: 1 })),
+      r0.then(cleanup0).then(() => ({ value: 0 })),
+      r1.then(cleanup1).then(() => ({ value: 1 })),
     ]);
+
+    // TODO: I
 
     return { sent, result };
   }
