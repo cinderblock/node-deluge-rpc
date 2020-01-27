@@ -838,8 +838,8 @@ export default function DelugeRPC(
     function cleanup1() {}
 
     const result = Promise.race<Promise<RequestResult<ProtocolVersion>>>([
-      r0.then(cleanup0).then(() => ({ value: 0 })),
-      r1.then(cleanup1).then(() => ({ value: 1 })),
+      r0.then(cleanup0).then(() => 0),
+      r1.then(cleanup1).then(() => 1),
     ]);
 
     // TODO: I
