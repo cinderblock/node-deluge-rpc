@@ -19,7 +19,6 @@ import {
 
 import nextPowerOfTwo from 'smallest-power-of-two';
 
-import { SharedPromise } from './utils/SharedPromise';
 import { AllPromises } from './utils/AllPromises';
 
 import {
