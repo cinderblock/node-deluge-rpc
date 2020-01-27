@@ -22,7 +22,12 @@
   "files": [
     "dist/DelugeRPC.js",
     "dist/DelugeRPC.d.ts",
-    "dist/utils/SharedPromise.js"
+    "dist/utils/AllPromises.js",
+    "dist/utils/AllPromises.d.ts",
+    "dist/utils/Awaitable.js",
+    "dist/utils/Awaitable.d.ts",
+    "dist/utils/SharedPromise.js",
+    "dist/utils/SharedPromise.d.ts"
   ],
   "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
