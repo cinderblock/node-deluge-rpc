@@ -433,7 +433,7 @@ export default function DelugeRPC(
     addTorrentFile: (
       filename: Awaitable<string>,
       filedump: Awaitable<FileDump>,
-      torrentOptions: Awaitable<TorrentOptions | null>
+      torrentOptions: Awaitable<TorrentOptions | null> = null
     ) =>
       // TODO: Return type
       request('core.add_torrent_file', [
@@ -444,8 +444,8 @@ export default function DelugeRPC(
 
     addTorrentUrl: (
       url: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | null>,
-      options: Awaitable<{ headers?: Awaitable<FlatMap> } | null>
+      torrentOptions: Awaitable<TorrentOptions | null> = null,
+      options: Awaitable<{ headers?: Awaitable<FlatMap> } | null> = null
     ) =>
       // TODO: Return type
       request(
@@ -458,7 +458,7 @@ export default function DelugeRPC(
 
     addTorrentMagnet: (
       uri: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | null>
+      torrentOptions: Awaitable<TorrentOptions | null> = null
     ) =>
       // TODO: Return type
       request('core.add_torrent_magnet', [uri, handleOptions(torrentOptions)]),
@@ -599,7 +599,7 @@ export default function DelugeRPC(
 
     setTorrentOptions: (
       torrentIds: Awaitable<Awaitable<string>[]>,
-      torrentOptions: Awaitable<TorrentOptions | null>
+      torrentOptions: Awaitable<TorrentOptions | null> = null
     ) =>
       // TODO: Return type
       request('core.set_torrent_options', [
