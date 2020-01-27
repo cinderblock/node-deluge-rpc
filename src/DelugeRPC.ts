@@ -54,8 +54,11 @@ export type ErrorResultV0 = { error: RencodableData; extra: RencodableData[] };
 
 export type ErrorResultV1 = {
   error: string;
-  message: string;
-  traceback: string;
+  // Documentation says it's a string. It's not. It's an array.
+  message: string[];
+
+  // Documentation says this is a string. It's not. It's an empty object
+  traceback: {};
 };
 
 export type ErrorResult = ErrorResultV0 | ErrorResultV1;
@@ -231,8 +234,8 @@ export default function DelugeRPC(
         const [id, exceptionType, exceptionMsg, traceback] = payload as [
           number,
           string,
-          string,
-          string,
+          string[],
+          {},
         ];
 
         getResolvers(id).resolve({
