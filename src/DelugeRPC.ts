@@ -50,12 +50,15 @@ export async function loadFile(file: string) {
   return (<Buffer>await readFilePromise(file)).toString('base64');
 }
 
-/**
- * @experimental Subject to change
- */
-export type RPCError = RencodableData;
+export type ErrorResultV0 = { error: RencodableData; extra: RencodableData[] };
 
-export type ErrorResult = { error: RPCError };
+export type ErrorResultV1 = {
+  error: string;
+  message: string;
+  traceback: string;
+};
+
+export type ErrorResult = ErrorResultV0 | ErrorResultV1;
 
 export type SuccessResult<
   RPCResponse extends RencodableData = RencodableData
@@ -203,15 +206,40 @@ export default function DelugeRPC(
     debug('Decoded Data!');
     debug(payload);
 
-    const [type, id, data] = <[number, number | string, RencodableData]>payload;
+    if (!Array.isArray(payload)) {
+      events.emit('decodingError', 'Invalid payload received:', payload);
+      return;
+    }
+
+    const type = payload.shift();
 
     if (type == RESPONSE) {
-      getResolvers(<number>id).resolve({ value: parseResponse(data) });
+      const [requestId, data] = payload as [number, RencodableData];
+
+      getResolvers(requestId).resolve({ value: parseResponse(data) });
     } else if (type == ERROR) {
-      // The API says data is just the exception type but I think it includes all of it
-      getResolvers(<number>id).resolve({ error: parseResponse(data) });
+      if (protocolVersion === 0) {
+        const [requestId, error, ...extra] = payload as [number, string];
+
+        // The API says data is just the exception type but I think it includes all of it
+        getResolvers(requestId).resolve({ error: parseResponse(error), extra });
+      } else if (protocolVersion === 1) {
+        const [id, exceptionType, exceptionMsg, traceback] = payload as [
+          number,
+          string,
+          string,
+          string,
+        ];
+
+        getResolvers(id).resolve({
+          error: exceptionType,
+          message: exceptionMsg,
+          traceback,
+        });
+      }
     } else if (type == EVENT) {
-      events.emit('delugeEvent', { name: id, data: parseResponse(data) });
+      const [name, data] = payload as [string, string];
+      events.emit('delugeEvent', { name, data: parseResponse(data) });
     } else {
       events.emit('decodingError', 'Invalid payload type received:', type);
     }
