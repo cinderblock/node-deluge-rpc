@@ -13,9 +13,9 @@ yarn add deluge-rpc-socket
 
 ## Usage
 
-```js
-const tls = require('tls');
-const DelugeRPC = require('deluge-rpc-socket').default;
+```ts
+import Deluge, { isRPCError } from 'deluge-rpc-socket';
+import { connect } from 'tls';
 
 const socket = tls.connect(58846, {
   // Deluge often runs with self-signed certificates
@@ -24,31 +24,70 @@ const socket = tls.connect(58846, {
 
 const rpc = DelugeRPC(socket);
 
-// Wait for socket.on('secureConnect', ...)
-
-// `sent` monitors if the request was actually sent to Deluge or if there was some error on our end
-// `result` resolves when we get a response from the remote server
-let { result, sent } = rpc.daemon.login('username', 'password');
-
-// Monitor socket status
-sent
-  .then(() => {
-    console.log('Message sent');
-  })
-  .catch(() => {
-    console.log('Message not sent');
-  });
-
-// If message was not sent, this will never resolve.
-result.then(({ error, response }) => {
-  console.log(error || response);
-});
-
 // Listen for asynchronous events from daemon
 rpc.events.on('delugeEvent', console.log);
 
 // Non fatal decoding errors that indicate something is wrong with the protocol...
 rpc.events.on('decodingError', console.log);
+
+// Wait for socket.on('secureConnect', ...) event before running the following example functions
+
+async function login(username: string, password: string): Promise<boolean> {
+  // `sent` monitors if the request was actually sent to Deluge or if there was some error on our end
+  // `result` resolves when we get a response from the remote server
+  const { result, sent } = rpc.daemon.login(username, password);
+
+  try {
+    await sent;
+  } catch (e) {
+    console.log('Login message not sent');
+    return false;
+  }
+
+  console.log('Login message sent');
+
+  // If message was not sent, this will never resolve.
+  const res = await result;
+
+  if (isRPCError(res)) {
+    console.log('Error result!');
+    console.log(res.error);
+    return false;
+  }
+
+  console.log('Login result:');
+  console.log(res);
+
+  return true;
+}
+
+async function addTorrent(url: string): Promise<boolean> {
+  // `sent` monitors if the request was actually sent to Deluge or if there was some error on our end
+  // `result` resolves when we get a response from the remote server
+  const { result, sent } = rpc.core.addTorrentUrl(url);
+
+  try {
+    await sent;
+  } catch (e) {
+    console.log('Add Torrent message not sent');
+    return false;
+  }
+
+  console.log('Add Torrent message sent');
+
+  // If message was not sent, this will never resolve.
+  const res = await result;
+
+  if (isRPCError(res)) {
+    console.log('Error result from Add Torrent!');
+    console.log(res.error);
+    return false;
+  }
+
+  console.log('Add Torrent result:', res);
+
+  return true;
+}
 ```
 
 ### Arguments
