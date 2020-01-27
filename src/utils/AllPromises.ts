@@ -20,7 +20,7 @@ function isObject(x: any) {
 
 // Resolve when all Promises deeply in objects or arrays resolve
 export async function AllPromises(
-  data: AwaitableRencodableData
+  data: AwaitableRencodableData,
 ): Promise<RencodableData> {
   // Resolve any promise or get raw data
   const dataResolved = await data;
@@ -31,7 +31,7 @@ export async function AllPromises(
   if (Array.isArray(dataResolved)) {
     // If we're checking an array, recurse and resolve everything inside
     return Promise.all(
-      (<ArrayAwaitableRencodable>dataResolved).map(AllPromises)
+      (<ArrayAwaitableRencodable>dataResolved).map(AllPromises),
     );
   }
 
@@ -41,7 +41,7 @@ export async function AllPromises(
   const keys = Object.keys(<ObjectAwaitableRencodable>dataResolved);
   for (let i = 0; i < keys.length; i++) {
     ret[keys[i]] = await AllPromises(
-      (<ObjectAwaitableRencodable>dataResolved)[keys[i]]
+      (<ObjectAwaitableRencodable>dataResolved)[keys[i]],
     );
   }
 

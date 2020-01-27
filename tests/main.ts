@@ -17,7 +17,7 @@ type Options = {
 
 function testVersion(
   test: jest.It,
-  { connect: { host, port }, options, protocolVersion }: Options
+  { connect: { host, port }, options, protocolVersion }: Options,
 ) {
   const socket = SharedPromise<tls.TLSSocket>();
 

@@ -62,7 +62,7 @@ export type SuccessResult<
 > = { value: RPCResponse };
 
 export function isRPCError<RPCResponse extends RencodableData = RencodableData>(
-  result: SuccessResult<RPCResponse> | ErrorResult
+  result: SuccessResult<RPCResponse> | ErrorResult,
 ): result is ErrorResult {
   return !!(result as ErrorResult).error;
 }
@@ -109,7 +109,7 @@ export default function DelugeRPC(
      * Default subject to change. Currently true
      */
     camelCaseResponses?: boolean;
-  } = {}
+  } = {},
 ) {
   // Setup debug function
   const debug = getDebug(options.debug);
@@ -234,7 +234,7 @@ export default function DelugeRPC(
         try {
           // Decode payload
           payload = decode(
-            Buffer.from(pako.inflate(buffer.slice(0, currentLength)))
+            Buffer.from(pako.inflate(buffer.slice(0, currentLength))),
           );
           // Remove parsed data, only if decoding did not fail
           removeBufferBeginning(currentLength);
@@ -264,7 +264,7 @@ export default function DelugeRPC(
 
         // Extract the payload and decode it
         const payload = decode(
-          Buffer.from(pako.inflate(buffer.slice(5, payloadLength)))
+          Buffer.from(pako.inflate(buffer.slice(5, payloadLength))),
         );
         // Remove parsed data
         removeBufferBeginning(packetLength);
@@ -289,7 +289,7 @@ export default function DelugeRPC(
   function rawSend(
     data: RencodableData,
     cb: (err?: Error) => void,
-    overrideVersion?: 0 | 1
+    overrideVersion?: 0 | 1,
   ) {
     // Encode the data as Deluge expects
     let buff = pako.deflate(encode(data));
@@ -350,7 +350,7 @@ export default function DelugeRPC(
       | ObjectAwaitableRencodable
       | Awaitable<null> = [],
     kwargs: ObjectAwaitableRencodable | Awaitable<null> = {},
-    protocolVersion?: ProtocolVersion
+    protocolVersion?: ProtocolVersion,
   ): Request<T> {
     // Get next response ID
     const id = nextId();
@@ -389,7 +389,7 @@ export default function DelugeRPC(
             socket.removeListener('error', reject);
             resolve();
           },
-          protocolVersion
+          protocolVersion,
         );
       } catch (e) {
         // Probably an error resolving all of the passed arguments
@@ -433,7 +433,7 @@ export default function DelugeRPC(
     addTorrentFile: (
       filename: Awaitable<string>,
       filedump: Awaitable<FileDump>,
-      torrentOptions: Awaitable<TorrentOptions | null> = null
+      torrentOptions: Awaitable<TorrentOptions | null> = null,
     ) =>
       // TODO: Return type
       request('core.add_torrent_file', [
@@ -445,7 +445,7 @@ export default function DelugeRPC(
     addTorrentUrl: (
       url: Awaitable<string>,
       torrentOptions: Awaitable<TorrentOptions | null> = null,
-      options: Awaitable<{ headers?: Awaitable<FlatMap> } | null> = null
+      options: Awaitable<{ headers?: Awaitable<FlatMap> } | null> = null,
     ) =>
       // TODO: Return type
       request(
@@ -453,19 +453,19 @@ export default function DelugeRPC(
         [url, handleOptions(torrentOptions)],
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<null>
+          | Awaitable<null>,
       ),
 
     addTorrentMagnet: (
       uri: Awaitable<string>,
-      torrentOptions: Awaitable<TorrentOptions | null> = null
+      torrentOptions: Awaitable<TorrentOptions | null> = null,
     ) =>
       // TODO: Return type
       request('core.add_torrent_magnet', [uri, handleOptions(torrentOptions)]),
 
     removeTorrent: (
       torrentId: Awaitable<string>,
-      removeData: Awaitable<boolean>
+      removeData: Awaitable<boolean>,
     ) =>
       // TODO: Return type
       request('core.remove_torrent', [torrentId, removeData]),
@@ -490,14 +490,14 @@ export default function DelugeRPC(
     connectPeer: (
       torrentId: Awaitable<string>,
       ip: Awaitable<string>,
-      port: Awaitable<number>
+      port: Awaitable<number>,
     ) =>
       // TODO: Return type
       request('core.connect_peer', [torrentId, ip, port]),
 
     moveStorage: (
       torrentIds: Awaitable<Awaitable<string>[]>,
-      dest: Awaitable<string>
+      dest: Awaitable<string>,
     ) =>
       // TODO: Return type
       request('core.move_storage', [
@@ -520,7 +520,7 @@ export default function DelugeRPC(
     getTorrentStatus: (
       torrentId: Awaitable<string>,
       keys: Awaitable<Awaitable<string>[]>,
-      options: Awaitable<{ diff?: Awaitable<boolean> }>
+      options: Awaitable<{ diff?: Awaitable<boolean> }>,
     ) =>
       // TODO: Return type
       request(
@@ -528,21 +528,21 @@ export default function DelugeRPC(
         [torrentId, keys] as ArrayAwaitableRencodable,
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<null>
+          | Awaitable<null>,
       ),
 
     // TODO: Return type
     getTorrentsStatus: (
       filterDict: Awaitable<FlatMap>,
       keys: Awaitable<Awaitable<string>[]>,
-      options: Awaitable<{ diff?: Awaitable<boolean> }>
+      options: Awaitable<{ diff?: Awaitable<boolean> }>,
     ) =>
       request(
         'core.get_torrents_status',
         [filterDict, keys] as ArrayAwaitableRencodable,
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<null>
+          | Awaitable<null>,
       ),
 
     getFilterTree: (options: {
@@ -554,7 +554,7 @@ export default function DelugeRPC(
         'core.get_filter_tree',
         handleOptions(options as AwaitableRencodableData) as
           | ObjectAwaitableRencodable
-          | Awaitable<null>
+          | Awaitable<null>,
       ),
 
     getSessionState: () =>
@@ -599,7 +599,7 @@ export default function DelugeRPC(
 
     setTorrentOptions: (
       torrentIds: Awaitable<Awaitable<string>[]>,
-      torrentOptions: Awaitable<TorrentOptions | null> = null
+      torrentOptions: Awaitable<TorrentOptions | null> = null,
     ) =>
       // TODO: Return type
       request('core.set_torrent_options', [
@@ -609,7 +609,7 @@ export default function DelugeRPC(
 
     setTorrentTrackers: (
       torrentId: Awaitable<string>,
-      trackers: { url: Awaitable<string>; tier: Awaitable<string> }[]
+      trackers: { url: Awaitable<string>; tier: Awaitable<string> }[],
     ) =>
       // TODO: Return type
       request('core.set_torrent_trackers', [torrentId, trackers]),
@@ -630,7 +630,7 @@ export default function DelugeRPC(
       createdBy: Awaitable<string>,
       // TODO: Check type
       trackers: AwaitableFlatMap,
-      addToSession: Awaitable<boolean>
+      addToSession: Awaitable<boolean>,
     ) =>
       // TODO: Return type
       request('core.create_torrent', [
@@ -648,7 +648,7 @@ export default function DelugeRPC(
 
     uploadPlugin: (
       filename: Awaitable<string>,
-      filedump: Awaitable<FileDump>
+      filedump: Awaitable<FileDump>,
     ) =>
       // TODO: Return type
       request('core.upload_plugin', [filename, handleFiledump(filedump)]),
@@ -782,7 +782,7 @@ export default function DelugeRPC(
       'daemon.info',
       null,
       null,
-      0
+      0,
     );
 
     // This will result in success on v1 and be ignored on v0
@@ -790,7 +790,7 @@ export default function DelugeRPC(
       'daemon.info',
       null,
       null,
-      1
+      1,
     );
 
     const sent = Promise.all([sent0, sent1]).then(() => {});
