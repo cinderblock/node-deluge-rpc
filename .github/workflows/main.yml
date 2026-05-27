@@ -148,27 +148,4 @@ jobs:
         run: echo TODO
       - name: Shutdown Deluged 2
         run: echo TODO
-
-  publish:
-    name: Publish - Master
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    needs:
-      [
-        test-with-coverage,
-        test-install-and-run-from-git,
-        check-spelling,
-        check-format,
-      ]
-
-    steps:
-      - name: Checkout latest code
-        uses: actions/checkout@v1
-
-      - name: Create .npmrc with Auth Token
-        run: echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
-
-      - name: Publish to npm
-        run: 'npm publish || :'
-        env:
-          NPM_TOKEN: ${{ secrets.npm_token }}
+  # Publishing moved to .github/workflows/publish.yml (tag-triggered, Trusted Publishing).

@@ -37,6 +37,11 @@ export {
 
 const readFilePromise = promisify(readFile);
 
+// Keep in sync with package.json on release. Used as the default value of the
+// `client_version` kwarg on `daemon.login`; Deluge 2.x rejects the login with
+// `IncompatibleClient` if that kwarg is missing.
+const PACKAGE_VERSION = '0.5.0';
+
 function getDebug(d: boolean | ((...args: any[]) => void) | undefined) {
   return typeof d == 'function'
     ? d
@@ -116,6 +121,16 @@ export default function DelugeRPC(
      * Default subject to change. Currently true
      */
     camelCaseResponses?: boolean;
+    /**
+     * Value sent as the `client_version` kwarg of `daemon.login`.
+     *
+     * Deluge 2.x raises `IncompatibleClient` if this is missing or `None`,
+     * so we always send something. The default is this package's own version
+     * (a parseable semver), matching the convention of Deluge's own client
+     * which sends `deluge.common.get_version()`. Override if you need to
+     * impersonate a specific Deluge client version.
+     */
+    clientVersion?: string;
   } = {},
 ) {
   // Setup debug function
@@ -125,6 +140,8 @@ export default function DelugeRPC(
 
   // Default true
   const camelCaseResponses = options.camelCaseResponses ?? true;
+
+  const clientVersion = options.clientVersion ?? PACKAGE_VERSION;
 
   // Internal receive buffer in case multi-part messages are received.
   let buffer = Buffer.allocUnsafe(0);
@@ -707,8 +724,8 @@ export default function DelugeRPC(
       request<number>(
         'daemon.login',
         [username, password],
-        // Deluge 2.0 needs this to be non-null. 1.0 doesn't care.
-        { client_version: 'deluge-rpc-socket' },
+        // Deluge 2.x raises IncompatibleClient if this is None. 1.x ignores it.
+        { client_version: clientVersion },
       ),
   };
 
