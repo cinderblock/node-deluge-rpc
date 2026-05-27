@@ -1,24 +1,28 @@
+// Integration tests against a real Deluge daemon. Disabled by default; set
+// DELUGE1_PORT (and optionally DELUGE2_PORT for both versions) to enable.
+// A docker-compose-based test harness is planned for v1.1; until then these
+// run only against your own daemon.
+
+import { afterAll, describe, expect, test } from 'bun:test';
 import tls from 'tls';
 
-// import DelugeRPC from '..';
-import DelugeRPC, { ProtocolVersion, isRPCError } from '../src/DelugeRPC';
-// import DelugeRPC from 'deluge-rpc-socket';
-
-import { SharedPromise } from '../src/utils/SharedPromise';
+import DelugeRPC, { ProtocolVersion, isRPCError } from './DelugeRPC.js';
+import { SharedPromise } from './utils/SharedPromise.js';
 
 type Options = {
   connect: { host: string; port: number };
   options?: tls.ConnectionOptions;
   /**
    * Undefined means no expected version, autodetect
-   * */
+   */
   protocolVersion?: ProtocolVersion;
 };
 
-function testVersion(
-  test: jest.It,
-  { connect: { host, port }, options, protocolVersion }: Options,
-) {
+function testVersion({
+  connect: { host, port },
+  options,
+  protocolVersion,
+}: Options) {
   const socket = SharedPromise<tls.TLSSocket>();
 
   const connected = SharedPromise();
@@ -45,12 +49,8 @@ function testVersion(
   });
 
   test('Can wrap a socket', async () => {
-    const d = DelugeRPC(await socket.promise, {
-      protocolVersion,
-    });
-
+    const d = DelugeRPC(await socket.promise, { protocolVersion });
     RPC.resolve(d);
-
     await RPC.promise;
   });
 
@@ -77,7 +77,7 @@ function testVersion(
         detectedProtocol.resolve(res);
       }
     } catch (e) {
-      detectedProtocol.reject(e);
+      detectedProtocol.reject(e as Error);
     }
   });
 
@@ -89,15 +89,9 @@ function testVersion(
 
   test('Can run `daemon.info`', async () => {
     const rpc = await connect();
-
-    const { sent, result } = rpc.daemon.info();
-
+    const { sent } = rpc.daemon.info();
     await sent;
-
-    // Why does daemon 1.3.x not respond?
-    // const res = await result;
-
-    // TODO: Finish this test
+    // TODO: assert on result. Deluge 1.3.x is known not to respond.
   });
 
   afterAll(async () => {
@@ -105,40 +99,41 @@ function testVersion(
   });
 }
 
-// TODO: read from config.js instead of environment variables?
-
-const port1 =
-  Number(process.env.DELUGE1_PORT || process.env.DELUGE_PORT) || 58846;
-
+const port1 = Number(process.env.DELUGE1_PORT || process.env.DELUGE_PORT);
 const host1 =
   process.env.DELUGE1_HOST || process.env.DELUGE_HOST || 'localhost';
-
 const version1 = Number(process.env.DELUGE_PROTOCOL_VERSION) || 0 ? 1 : 0;
 
 const port2 = Number(process.env.DELUGE2_PORT);
 const host2 = process.env.DELUGE2_HOST || 'localhost';
 
-const options = {
-  rejectUnauthorized: false,
-};
+const options: tls.ConnectionOptions = { rejectUnauthorized: false };
 
-function firstTests() {
-  testVersion(test, {
-    connect: { host: host1, port: port1 },
-    options,
-    protocolVersion: version1,
-  });
-}
+// Integration tests need a real Deluge daemon. Skip the whole suite when
+// neither DELUGE1_PORT nor DELUGE_PORT is set, so CI can run cleanly.
+const skipIntegration = !port1;
 
-if (!port2) {
-  firstTests();
-} else {
-  describe('Deluge 1.x', firstTests);
-  describe('Deluge 2.x', () => {
-    testVersion(test, {
-      connect: { host: host2, port: port2 },
-      options,
-      protocolVersion: 1,
+describe.skipIf(skipIntegration)('Deluge daemon (integration)', () => {
+  if (port2) {
+    describe('Deluge 1.x', () => {
+      testVersion({
+        connect: { host: host1, port: port1 },
+        options,
+        protocolVersion: version1,
+      });
     });
-  });
-}
+    describe('Deluge 2.x', () => {
+      testVersion({
+        connect: { host: host2, port: port2 },
+        options,
+        protocolVersion: 1,
+      });
+    });
+  } else {
+    testVersion({
+      connect: { host: host1, port: port1 },
+      options,
+      protocolVersion: version1,
+    });
+  }
+});

@@ -11,5 +11,4 @@ export interface ObjectAwaitableRencodable {
   [k: string]: AwaitableRencodableData;
   [k: number]: AwaitableRencodableData;
 }
-export interface ArrayAwaitableRencodable
-  extends Array<AwaitableRencodableData> {}
+export interface ArrayAwaitableRencodable extends Array<AwaitableRencodableData> {}

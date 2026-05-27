@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,41 +12,50 @@ permissions:
 
 jobs:
   publish:
-    name: Publish to npm
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-      - name: Set up Node 22
-        uses: actions/setup-node@v4
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun test src
+      - run: bun run build
+
+      # npm CLI for trusted-publishing OIDC exchange + provenance signing.
+      # No registry-url on setup-node — its placeholder authToken blocks OIDC.
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-
-      # Node 22 ships with an npm too old for Trusted Publishing OIDC.
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
+      - run: npm install -g npm@latest
 
       - name: Verify tag matches package.json version
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
           PKG_VERSION="$(node -p "require('./package.json').version")"
-          echo "Tag version: $TAG_VERSION"
-          echo "Package version: $PKG_VERSION"
+          echo "Tag: $TAG_VERSION"
+          echo "Package: $PKG_VERSION"
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
             echo "::error::Tag v$TAG_VERSION does not match package.json version $PKG_VERSION"
             exit 1
           fi
 
-      - name: Build
-        run: yarn build
+      # Pre-release versions (anything with a `-` after MAJOR.MINOR.PATCH) get
+      # the `next` dist-tag so they don't displace `latest`. Stable versions
+      # get the default `latest` tag.
+      - name: Pick npm dist-tag
+        id: npm-tag
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$PKG_VERSION" == *-* ]]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Unit tests
-        run: npx jest tests/login.unit.ts --ci --coverage=false
-
-      - name: Publish to npm
-        run: npm publish --provenance --access public
+      # Auth via npm Trusted Publishing. Configure on npmjs.com:
+      # https://www.npmjs.com/package/deluge-rpc-socket/access → Trusted Publisher
+      # → GitHub Actions / cinderblock / node-deluge-rpc / publish.yml / (blank env).
+      - run: npm publish --provenance --access public --tag "${{ steps.npm-tag.outputs.tag }}"

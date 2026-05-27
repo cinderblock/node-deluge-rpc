@@ -1,58 +1,77 @@
 {
   "name": "deluge-rpc-socket",
-  "version": "0.5.0",
+  "version": "1.0.0-alpha",
   "description": "Node.js API for Deluge's Binary Socket RPC API",
+  "type": "module",
   "main": "dist/DelugeRPC.js",
   "types": "dist/DelugeRPC.d.ts",
-  "scripts": {
-    "format": "prettier **/*",
-    "spellcheck": "cspell **/*",
-    "test": "jest",
-    "preversion": "yarn format --write",
-    "build": "tsc --declaration",
-    "clean": "rm -f dist",
-    "checks": "yarn format && yarn build && yarn test",
-    "prepare": "yarn build",
-    "start": "yarn repl",
-    "prerepl": "yarn clean",
-    "repl": "ts-node repl.ts --experimental-repl-await",
-    "setup": "yarn && yarn mkconfig && install-vscode-extensions",
-    "mkconfig": "echo Making new config.js for testing purposes. Please update it manually. && cp -i config.sample.js config.js"
+  "exports": {
+    ".": {
+      "types": "./dist/DelugeRPC.d.ts",
+      "default": "./dist/DelugeRPC.js"
+    }
   },
   "files": [
     "dist/DelugeRPC.js",
+    "dist/DelugeRPC.js.map",
     "dist/DelugeRPC.d.ts",
+    "dist/DelugeRPC.d.ts.map",
     "dist/utils/AllPromises.js",
+    "dist/utils/AllPromises.js.map",
     "dist/utils/AllPromises.d.ts",
+    "dist/utils/AllPromises.d.ts.map",
     "dist/utils/Awaitable.js",
+    "dist/utils/Awaitable.js.map",
     "dist/utils/Awaitable.d.ts",
+    "dist/utils/Awaitable.d.ts.map",
     "dist/utils/SharedPromise.js",
-    "dist/utils/SharedPromise.d.ts"
+    "dist/utils/SharedPromise.js.map",
+    "dist/utils/SharedPromise.d.ts",
+    "dist/utils/SharedPromise.d.ts.map"
   ],
-  "repository": "git@github.com:cinderblock/node-deluge-rpc.git",
+  "engines": {
+    "bun": ">=1.3",
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test src",
+    "lint": "tsc --noEmit",
+    "format": "prettier --write .",
+    "prepublishOnly": "bun run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cinderblock/node-deluge-rpc.git"
+  },
+  "keywords": [
+    "deluge",
+    "deluge-rpc",
+    "rpc",
+    "bittorrent",
+    "torrent",
+    "rencode",
+    "python-rencode"
+  ],
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cinderblock/node-deluge-rpc/issues"
+  },
+  "homepage": "https://github.com/cinderblock/node-deluge-rpc#readme",
   "dependencies": {
     "camelcase-keys-deep": "^0.1.0",
     "pako": "^1.0.10",
-    "python-rencode": "^1.4.4",
-    "smallest-power-of-two": "^1.1.2",
+    "python-rencode": "^2.0.0",
+    "smallest-power-of-two": "^2.0.0",
     "snakecase-keys": "^3.1.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.0",
     "@types/camelcase-keys-deep": "^0.1.0",
-    "@types/jest": "^24.0.25",
-    "@types/node": "^13.1.2",
+    "@types/node": "^22.19.19",
     "@types/pako": "^1.0.1",
-    "coveralls": "^3.0.9",
-    "cspell": "^4.0.43",
-    "install-vscode-extensions": "^1.0.0",
-    "jest": "^24.9.0",
-    "prettier": "^1.19.1",
-    "repl-live": "^0.1.0",
-    "ts-jest": "^24.2.0",
-    "ts-node": "^8.5.4",
-    "typescript": "^3.7.4",
-    "yarn": "^1.21.1"
+    "prettier": "^3.5.0",
+    "typescript": "^6.0.3"
   }
 }

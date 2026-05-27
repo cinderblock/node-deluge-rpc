@@ -1,5 +1,3 @@
-'use strict';
-
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
 import { promisify } from 'util';
@@ -9,9 +7,8 @@ import camelCaseKeys from 'camelcase-keys-deep';
 import snakeCaseKeys from 'snakecase-keys';
 import pako from 'pako';
 
-import {
-  encode,
-  decode,
+import { encode, decode } from 'python-rencode';
+import type {
   RencodableData,
   RencodableObject,
   RencodableArray,
@@ -19,35 +16,36 @@ import {
 
 import nextPowerOfTwo from 'smallest-power-of-two';
 
-import { AllPromises } from './utils/AllPromises';
+import { AllPromises } from './utils/AllPromises.js';
 
-import {
+import type {
   Awaitable,
   AwaitableRencodableData,
   ObjectAwaitableRencodable,
   ArrayAwaitableRencodable,
-} from './utils/Awaitable';
+} from './utils/Awaitable.js';
 
-export {
+import pkg from '../package.json' with { type: 'json' };
+
+export type {
   Awaitable,
   AwaitableRencodableData,
   ObjectAwaitableRencodable,
   ArrayAwaitableRencodable,
-} from './utils/Awaitable';
+} from './utils/Awaitable.js';
 
 const readFilePromise = promisify(readFile);
 
-// Keep in sync with package.json on release. Used as the default value of the
-// `client_version` kwarg on `daemon.login`; Deluge 2.x rejects the login with
-// `IncompatibleClient` if that kwarg is missing.
-const PACKAGE_VERSION = '0.5.0';
+// Default value of the `client_version` kwarg on `daemon.login`; Deluge 2.x
+// rejects the login with `IncompatibleClient` if that kwarg is missing.
+const PACKAGE_VERSION = pkg.version;
 
 function getDebug(d: boolean | ((...args: any[]) => void) | undefined) {
   return typeof d == 'function'
     ? d
     : d === true
-    ? (...args: any[]) => console.log('DEBUG:', ...args)
-    : () => {};
+      ? (...args: any[]) => console.log('DEBUG:', ...args)
+      : () => {};
 }
 
 export async function loadFile(file: string) {
@@ -82,9 +80,9 @@ export function isRPCErrorV1(error: ErrorResult): error is ErrorResult {
 /**
  * @future Timeout might be added as a response type
  */
-export type RequestResult<
-  RPCResponse extends RencodableData = RencodableData
-> = SuccessResult<RPCResponse> | ErrorResult;
+export type RequestResult<RPCResponse extends RencodableData = RencodableData> =
+  | SuccessResult<RPCResponse>
+  | ErrorResult;
 
 /**
  * Deluge ^1.0.0 uses version 0 (default)
@@ -267,7 +265,7 @@ export default function DelugeRPC(
   }
 
   // When we get some data from the socket connection to the server
-  socket.on('data', data => {
+  socket.on('data', (data) => {
     appendToIncomingBuffer(data);
 
     // We automatically detect which version we're talking to upon any response because messages have predictable headers
@@ -337,7 +335,7 @@ export default function DelugeRPC(
    */
   function rawSend(
     data: RencodableData,
-    cb: (err?: Error) => void,
+    cb: (err?: Error | null) => void,
     overrideVersion?: 0 | 1,
   ) {
     // Encode the data as Deluge expects
@@ -463,9 +461,9 @@ export default function DelugeRPC(
    * @param dump Buffer of file (or base64 encoded string)
    * @returns Promised base64 string
    */
-  async function handleFiledump(dump: Awaitable<FileDump>) {
+  async function handleFiledump(dump: Awaitable<FileDump>): Promise<string> {
     const content = await dump;
-    if (content instanceof Buffer) return content.toString('base64');
+    if (Buffer.isBuffer(content)) return content.toString('base64');
     return content;
   }
 
@@ -853,10 +851,10 @@ export default function DelugeRPC(
 
     function cleanup1() {}
 
-    const result = Promise.race<Promise<RequestResult<ProtocolVersion>>>([
-      r0.then(cleanup0).then(() => 0),
-      r1.then(cleanup1).then(() => 1),
-    ]);
+    const result = Promise.race([
+      r0.then(cleanup0).then(() => 0 as ProtocolVersion),
+      r1.then(cleanup1).then(() => 1 as ProtocolVersion),
+    ]) as Promise<RequestResult<ProtocolVersion>>;
 
     // TODO: I
 

@@ -1,9 +1,9 @@
-import {
+import type {
   AwaitableRencodableData,
   ObjectAwaitableRencodable,
   ArrayAwaitableRencodable,
-} from './Awaitable';
-import { RencodableData, RencodableObject } from 'python-rencode';
+} from './Awaitable.js';
+import type { RencodableData, RencodableObject } from 'python-rencode';
 
 // Check if data is an object we want to parse
 function isObject(x: any) {

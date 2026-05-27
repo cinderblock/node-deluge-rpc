@@ -1,9 +1,11 @@
+import { describe, expect, test } from 'bun:test';
+
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
 import pako from 'pako';
 import { decode } from 'python-rencode';
 
-import DelugeRPC from '../src/DelugeRPC';
+import DelugeRPC from './DelugeRPC.js';
 
 /**
  * Minimal Socket stand-in that captures every `write()` so tests can
@@ -20,7 +22,7 @@ class MockSocket extends EventEmitter {
 }
 
 function asSocket(m: MockSocket): Socket {
-  return (m as unknown) as Socket;
+  return m as unknown as Socket;
 }
 
 /**
@@ -31,11 +33,11 @@ function unwrapV1Frame(frame: Buffer): Buffer {
   expect(frame[0]).toBe(0x01);
   const bodyLength = frame.readUInt32BE(1);
   expect(bodyLength).toBe(frame.length - 5);
-  return Buffer.from(pako.inflate(frame.slice(5)));
+  return Buffer.from(pako.inflate(frame.subarray(5)));
 }
 
 describe('daemon.login wire frame (protocol v1)', () => {
-  it('sends a non-empty client_version kwarg by default', async () => {
+  test('sends a non-empty client_version kwarg by default', async () => {
     const socket = new MockSocket();
     const rpc = DelugeRPC(asSocket(socket), { protocolVersion: 1 });
 
@@ -44,7 +46,7 @@ describe('daemon.login wire frame (protocol v1)', () => {
 
     expect(socket.written).toHaveLength(1);
 
-    const payload = decode(unwrapV1Frame(socket.written[0])) as any;
+    const payload = decode(unwrapV1Frame(socket.written[0]!)) as any;
     // Outer shape: [[id, method, args, kwargs]]
     expect(Array.isArray(payload)).toBe(true);
     expect(payload).toHaveLength(1);
@@ -56,7 +58,7 @@ describe('daemon.login wire frame (protocol v1)', () => {
     expect(kwargs.client_version.length).toBeGreaterThan(0);
   });
 
-  it('honors the clientVersion option override', async () => {
+  test('honors the clientVersion option override', async () => {
     const socket = new MockSocket();
     const rpc = DelugeRPC(asSocket(socket), {
       protocolVersion: 1,
@@ -66,7 +68,7 @@ describe('daemon.login wire frame (protocol v1)', () => {
     const { sent } = rpc.daemon.login('alice', 'hunter2');
     await sent;
 
-    const payload = decode(unwrapV1Frame(socket.written[0])) as any;
+    const payload = decode(unwrapV1Frame(socket.written[0]!)) as any;
     expect(payload[0][3]).toEqual({ client_version: '2.1.1' });
   });
 });
