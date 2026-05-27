@@ -1,6 +1,6 @@
 {
   "name": "deluge-rpc-socket",
-  "version": "1.0.0-alpha",
+  "version": "1.0.0",
   "description": "Node.js API for Deluge's Binary Socket RPC API",
   "type": "module",
   "main": "dist/DelugeRPC.js",

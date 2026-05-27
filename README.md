@@ -88,7 +88,10 @@ to camelCase by default; opt out with `camelCaseResponses: false`.
 
 ## Change Log
 
-### v1.0.0-alpha
+### v1.0.0
+
+Promoted from `1.0.0-alpha` after consumer validation against a real
+Deluge 2.x daemon. No functional changes from the alpha.
 
 - **Toolchain:** Bun-first; ESM; TypeScript 6; dropped yarn/ts-jest/ts-node/coveralls/cspell.
 - **Deps:** Bumped `python-rencode` to `^2.0.0` and `smallest-power-of-two` to `^2.0.0`.
