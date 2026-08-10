@@ -311,7 +311,7 @@ export default function DelugeRPC(
 
         // Extract the payload and decode it
         const payload = decode(
-          Buffer.from(pako.inflate(buffer.slice(5, payloadLength))),
+          Buffer.from(pako.inflate(buffer.slice(5, packetLength))),
         );
         // Remove parsed data
         removeBufferBeginning(packetLength);
