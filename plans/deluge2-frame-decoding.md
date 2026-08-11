@@ -118,7 +118,26 @@ out of the EventEmitter as an uncaught exception and takes the process down.
        `933c42d` preserved as Damian Kacperski's own commit.
 6. [x] `bun run lint` clean, prettier clean on all touched files.
 7. [x] Triage Dependabot PRs (see below) — verified against the GitHub API.
-8. [ ] **← current** Confirm with the user before pushing anything to GitHub.
+8. [x] Confirmed with the user, then pushed `master`. PR #16 auto-closed as MERGED.
+9. [x] Released v1.0.1: README changelog entry, version bump, tag `v1.0.1` pushed. The
+       `publish.yml` workflow ran to success and `deluge-rpc-socket@1.0.1` is on npm as
+       `latest`, published from CI with provenance — never from a CLI.
+
+## Status: complete, with one item left for the user
+
+Everything above is done. The only outstanding thing is **PR #15**
+(`actions/setup-node` 6→7), which cannot be merged with the current `gh` token:
+
+```
+GraphQL: refusing to allow an OAuth App to create or update workflow
+`.github/workflows/publish.yml` without `workflow` scope (mergePullRequest)
+```
+
+Current token scopes are `delete:packages, gist, read:org, read:packages, repo, user`.
+Fix with `gh auth refresh -s workflow`, then `gh pr merge 15 --merge --delete-branch`.
+
+Oddly #14 merged fine despite also touching `publish.yml` — GitHub's enforcement of this
+check is evidently not consistent between the two. Not worth chasing.
 
 ## Dependabot triage
 
