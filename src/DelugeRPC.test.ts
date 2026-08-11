@@ -51,6 +51,10 @@ function burnRequestIds(rpc: ReturnType<typeof DelugeRPC>, id: number) {
  * Reject as soon as the library reports a decoding problem. A frame the library fails to
  * decode leaves its request's `result` promise pending forever, so tests race against
  * this instead of waiting out the test timeout with no explanation.
+ *
+ * Call this *before* feeding the socket: `decodingError` is emitted synchronously from
+ * within `socket.emit('data', ...)`, so a listener attached afterwards misses it and the
+ * test goes back to hanging.
  */
 function decodingErrors(rpc: ReturnType<typeof DelugeRPC>): Promise<never> {
   return new Promise((_, reject) => {
@@ -139,10 +143,11 @@ describe('response decoding (protocol v1)', () => {
 
     burnRequestIds(rpc, CAPTURED_V1_FRAME_REQUEST_ID);
     const { result } = rpc.request('core.get_torrent_status');
+    const failed = decodingErrors(rpc);
 
     socket.emit('data', CAPTURED_V1_FRAME);
 
-    const status = (await Promise.race([result, decodingErrors(rpc)])) as any;
+    const status = (await Promise.race([result, failed])) as any;
     expect(status.peers).toHaveLength(2);
     expect(status.peers[0].client).toBe('qBittorrent/5.1.4');
     expect(status.peers[0].ip).toBe('198.51.100.200:3344');
@@ -156,15 +161,45 @@ describe('response decoding (protocol v1)', () => {
 
     const { result: first } = rpc.request('daemon.info');
     const { result: second } = rpc.request('daemon.info');
+    const failed = decodingErrors(rpc);
 
     socket.emit(
       'data',
       Buffer.concat([makeV1Response(0, '2.2.0'), makeV1Response(1, '2.2.1')]),
     );
 
-    expect(
-      await Promise.race([Promise.all([first, second]), decodingErrors(rpc)]),
-    ).toEqual(['2.2.0', '2.2.1']);
+    expect(await Promise.race([Promise.all([first, second]), failed])).toEqual([
+      '2.2.0',
+      '2.2.1',
+    ]);
+  });
+
+  test('reports an undecodable frame instead of throwing, and keeps parsing', async () => {
+    const socket = new MockSocket();
+    const rpc = DelugeRPC(asSocket(socket), { protocolVersion: 1 });
+
+    const errors: unknown[][] = [];
+    rpc.events.on('decodingError', (...args: unknown[]) => errors.push(args));
+
+    rpc.request('daemon.info'); // id 0, the reply to which we are about to corrupt
+    const { result: second } = rpc.request('daemon.info'); // id 1
+
+    // A frame whose length prefix is honest but whose body is not zlib at all. The v1
+    // branch has already waited for the whole packet by the time it inflates, so this
+    // is real corruption rather than a short read, and must not stall the parser.
+    const corrupt = makeV1Frame(Buffer.from('not zlib', 'utf8'));
+
+    // Both arrive together, so a parser that gave up on the bad one would swallow the
+    // good one behind it too.
+    expect(() =>
+      socket.emit('data', Buffer.concat([corrupt, makeV1Response(1, '2.2.0')])),
+    ).not.toThrow();
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0]![0]).toBe('Failed to decode packet:');
+
+    // The frame behind the corrupt one still resolves its request.
+    expect(await second).toBe('2.2.0');
   });
 
   test('parses a frame split across chunks', async () => {
@@ -172,11 +207,12 @@ describe('response decoding (protocol v1)', () => {
     const rpc = DelugeRPC(asSocket(socket), { protocolVersion: 1 });
 
     const { result } = rpc.request('daemon.info');
+    const failed = decodingErrors(rpc);
 
     const frame = makeV1Response(0, '2.2.0');
     socket.emit('data', frame.subarray(0, 7));
     socket.emit('data', frame.subarray(7));
 
-    expect(await Promise.race([result, decodingErrors(rpc)])).toBe('2.2.0');
+    expect(await Promise.race([result, failed])).toBe('2.2.0');
   });
 });
