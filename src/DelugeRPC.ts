@@ -311,6 +311,9 @@ export default function DelugeRPC(
 
         // Extract the payload and decode it.
         //
+        // Note the end offset is packetLength, not payloadLength: slice() ends at an
+        // offset rather than after a count, so the latter reads five bytes short.
+        //
         // Unlike v0 above, a failure here is *not* a sign that more data is coming: the
         // length prefix told us where this packet ends and we already waited for all of
         // it. So we must not break and wait, or we would retry the same bad packet on
@@ -319,7 +322,7 @@ export default function DelugeRPC(
         let payload;
         try {
           payload = decode(
-            Buffer.from(pako.inflate(buffer.slice(5, payloadLength))),
+            Buffer.from(pako.inflate(buffer.slice(5, packetLength))),
           );
         } catch (err) {
           debug('Error decoding packet. Skipping it.');
