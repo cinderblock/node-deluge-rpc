@@ -158,10 +158,15 @@ same mechanism that closed #16.
 2026-08-11 at Cameron's request ("i always prefer ssh"), so plain `git push` works for
 workflow files from here on and the explicit-URL dance above is no longer needed.
 
-Note `gh` subcommands still use the OAuth token no matter what `origin` is set to, so
-`gh pr merge` on a workflow-touching PR can still fail. Merge locally and push.
-`gh auth refresh -s workflow` would fix `gh` itself but is interactive — it needs a
-browser and a one-time code, so it cannot run from a non-interactive shell.
+**The scope wall is gone too.** Cameron ran `gh auth refresh` on 2026-08-11, and
+`gh auth status` now reports `delete:packages, gist, read:org, read:packages, repo, user,
+workflow`. So `gh pr merge` on a workflow-touching PR works from here on, and the
+merge-locally-and-push dance is no longer required — it is recorded above only because
+it is what actually happened for #15.
+
+(I had written that `gh auth refresh` "cannot be done from a non-interactive shell". That
+is true of _my_ shell, not of Cameron's — he just ran it. Don't present an interactive
+step as impossible when the answer is simply to hand it to him.)
 
 **The enforcement really is inconsistent, and I have not explained why.** I initially
 guessed that #14 only appeared to touch `publish.yml` because of a stale-base diff
