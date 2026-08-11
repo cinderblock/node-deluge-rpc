@@ -106,13 +106,19 @@ out of the EventEmitter as an uncaught exception and takes the process down.
 
 1. [x] Reproduce PR #16's claim locally; confirm it is deluge-rpc's bug, not pako's or rencode's.
 2. [x] Create `plans/deluge2-frame-decoding.md` and branch `deluge2-frame-decoding`.
-3. [ ] **← current** Add the regression test using the captured frame. Demonstrate it fails.
-4. [ ] Add the v1 `try`/`catch` + a corrupt-frame test. Demonstrate the new test passes and
-       the regression test still fails (now as a `decodingError` rather than a throw).
-5. [ ] Merge `pr-16`. Demonstrate the whole suite passes.
-6. [ ] `bun run lint` + `bun run format`, commit.
-7. [ ] Triage Dependabot PRs (see below).
-8. [ ] Confirm with the user before pushing anything to GitHub.
+3. [x] Add the regression test using the captured frame. Demonstrated failing —
+       `error: Tried to access data[222] but data len is: 222`, thrown from
+       `at emit (node:events:95:22)`, i.e. escaping the socket handler. Commit `d746f2d`.
+4. [x] Add the v1 `try`/`catch` + a corrupt-frame test. New test passed, regression test
+       still failed but now as `decodingError: Failed to decode packet: ...` rather than a
+       throw — confirming the hardening did not mask the bug. Commit `42b91de`.
+5. [x] Merge `pr-16`. One conflict, as expected (step 4 reindented the very line the PR
+       changes); resolved by keeping the new structure and taking the PR's
+       `packetLength`. Whole suite green: 6 pass / 0 fail. Merge commit `c98477e`, with
+       `933c42d` preserved as Damian Kacperski's own commit.
+6. [x] `bun run lint` clean, prettier clean on all touched files.
+7. [x] Triage Dependabot PRs (see below) — verified against the GitHub API.
+8. [ ] **← current** Confirm with the user before pushing anything to GitHub.
 
 ## Dependabot triage
 
@@ -127,6 +133,15 @@ Two groups, opposite dispositions:
   v1.0.0 modernization moved the project to Bun; `package-lock.json` and `yarn.lock` no
   longer exist on `master` (`git ls-tree master` shows only `bun.lock`), so these cannot
   merge and their advisories no longer apply to any file in the repo.
+
+Confirmed against the API rather than assumed: #14 and #15 both report
+`mergeable=MERGEABLE state=CLEAN`, and every one of the ten stale PRs reports
+`mergeable=CONFLICTING` with `files=yarn.lock`. (#10 hit a transient TLS error on the
+GraphQL endpoint during the sweep but is the same shape as the rest.)
+
+Dependabot is still configured for both ecosystems in `.github/dependabot.yml` — `npm`
+(grouped, all patterns, `@types/node` pinned off major) and `github-actions`. Closing the
+stale PRs does not disable anything; the npm ecosystem now tracks `bun.lock`.
 
 ## Findings / gotchas
 
