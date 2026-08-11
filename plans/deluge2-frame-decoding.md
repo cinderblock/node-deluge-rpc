@@ -154,10 +154,14 @@ So the recipe for any workflow-file change here: merge locally, push over SSH. G
 then sees the PR's head commit reachable from `master` and marks it MERGED on its own —
 same mechanism that closed #16.
 
-If this comes up often, either `gh auth refresh -s workflow` (interactive: needs a browser
-and a one-time code, so it cannot be done from a non-interactive shell) or switch the
-remote to SSH permanently with
-`git remote set-url origin git@github.com:cinderblock/node-deluge-rpc.git`.
+**`origin` is now SSH** — `git@github.com:cinderblock/node-deluge-rpc.git`, set on
+2026-08-11 at Cameron's request ("i always prefer ssh"), so plain `git push` works for
+workflow files from here on and the explicit-URL dance above is no longer needed.
+
+Note `gh` subcommands still use the OAuth token no matter what `origin` is set to, so
+`gh pr merge` on a workflow-touching PR can still fail. Merge locally and push.
+`gh auth refresh -s workflow` would fix `gh` itself but is interactive — it needs a
+browser and a one-time code, so it cannot run from a non-interactive shell.
 
 **The enforcement really is inconsistent, and I have not explained why.** I initially
 guessed that #14 only appeared to touch `publish.yml` because of a stale-base diff
