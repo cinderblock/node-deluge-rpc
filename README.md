@@ -88,6 +88,25 @@ to camelCase by default; opt out with `camelCaseResponses: false`.
 
 ## Change Log
 
+### v1.0.1
+
+- **Fixed:** Deluge 2.x (protocol v1) responses were decoded five bytes short.
+  The receive path ended the payload slice at `payloadLength` rather than at
+  `packetLength`, and `Buffer.slice` takes an end offset rather than a count.
+  The lost bytes are the Adler-32 trailer plus the final deflate byte, which
+  usually holds only the end-of-block code and padding — so most responses
+  still decoded and the bug stayed hidden. When that byte carried real symbol
+  bits the inflated output came up short and rencode threw
+  `Tried to access data[N] but data len is: N`. Reported and fixed by
+  [@dkacperski97](https://github.com/dkacperski97) in
+  [#16](https://github.com/cinderblock/node-deluge-rpc/pull/16).
+- **Fixed:** A packet that fails to decode is now reported via the
+  `decodingError` event and skipped, instead of throwing out of the socket
+  `data` handler as an uncaught exception that took the process down. Packets
+  behind the bad one still parse.
+- **Tests:** First coverage of the protocol v1 receive path, replaying a real
+  frame captured off a Deluge 2.2 daemon.
+
 ### v1.0.0
 
 Promoted from `1.0.0-alpha` after consumer validation against a real
