@@ -159,13 +159,21 @@ and a one-time code, so it cannot be done from a non-interactive shell) or switc
 remote to SSH permanently with
 `git remote set-url origin git@github.com:cinderblock/node-deluge-rpc.git`.
 
-Earlier note said #14 merged via the API "despite also touching publish.yml" and called
-the enforcement inconsistent. That was wrong and is worth correcting: #14's _net_ change
-against its merge base was `actions/checkout` only, and the `publish.yml` hunk showing in
-`master..pr-14` was an artifact of comparing across an old base. GitHub was consistent
-throughout; the diff was misleading.
+**The enforcement really is inconsistent, and I have not explained why.** I initially
+guessed that #14 only appeared to touch `publish.yml` because of a stale-base diff
+artifact, then checked, and the guess was wrong. Verified facts:
 
-**Read `base..head`, not `master..head`, when judging what a PR actually changes.** The
+- `git show --stat 3318c21` (the #14 merge, made through the GraphQL API with the
+  scope-less token) changes `.github/workflows/ci.yml` **and**
+  `.github/workflows/publish.yml`, one line each.
+- `base..head` for #14 shows the same two files, so it is not a diff artifact.
+- #15 changes only `publish.yml`, one line, and was refused by the same API, with the
+  same token, seconds later.
+
+So the same operation on the same file was allowed once and refused once. Don't build on
+a theory of when the check fires; just use SSH for anything touching `.github/workflows/`.
+
+**Separately: read `base..head`, not `master..head`, when judging what a PR changes.** The
 same trap nearly bit on #15: `git diff master..pr-15` appeared to revert the entire
 v1.0.1 release, because dependabot branched from `d4c0127`. The 3-way merge correctly
 applied one line. Always verify with `git merge --no-commit` plus `git diff HEAD` before
