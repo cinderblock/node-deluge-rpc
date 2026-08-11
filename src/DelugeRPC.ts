@@ -309,10 +309,32 @@ export default function DelugeRPC(
         // Make sure we have all the data we need to parse.
         if (currentLength < packetLength) break;
 
-        // Extract the payload and decode it
-        const payload = decode(
-          Buffer.from(pako.inflate(buffer.slice(5, payloadLength))),
-        );
+        // Extract the payload and decode it.
+        //
+        // Note the end offset is packetLength, not payloadLength: slice() ends at an
+        // offset rather than after a count, so the latter reads five bytes short.
+        //
+        // Unlike v0 above, a failure here is *not* a sign that more data is coming: the
+        // length prefix told us where this packet ends and we already waited for all of
+        // it. So we must not break and wait, or we would retry the same bad packet on
+        // every subsequent chunk forever while the receive buffer grew without bound.
+        // Report it, drop exactly this packet, and carry on with the next one.
+        let payload;
+        try {
+          payload = decode(
+            Buffer.from(pako.inflate(buffer.slice(5, packetLength))),
+          );
+        } catch (err) {
+          debug('Error decoding packet. Skipping it.');
+          debug(err);
+          // Remove the packet we're giving up on so the stream stays aligned
+          removeBufferBeginning(packetLength);
+          // Note the request this was answering can never be resolved now; we'd have had
+          // to decode the packet to learn which one it was.
+          events.emit('decodingError', 'Failed to decode packet:', err);
+          // Loop because the next packet may well be fine
+          continue;
+        }
         // Remove parsed data
         removeBufferBeginning(packetLength);
         // Handle decoded payload
