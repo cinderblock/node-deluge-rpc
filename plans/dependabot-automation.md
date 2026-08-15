@@ -71,6 +71,33 @@ The old config grouped `*` with no `update-types` filter, so PR #17 bundled four
 Splitting the group so only `minor`/`patch` are batched means majors arrive as individual,
 reviewable PRs and never block routine maintenance.
 
+### pako 1 → 3 migration: smaller than it looked
+
+Done on branch `pako-3`. Two findings worth keeping:
+
+- **`@types/pako` should be removed, not bumped.** pako 3 ships generated types
+  (`"types": "./dist/pako.d.ts"`). `@types/pako@3.0.0` is a DefinitelyTyped _stub_ whose
+  own description is "Stub TypeScript definitions entry for pako, which provides its own
+  types definitions". Dependabot proposed bumping it; the right move is to drop it.
+- **The `legacyHash` default flip is a non-issue here — it's an improvement.** Verified
+  empirically rather than assumed, since the test suite round-trips pako→pako and so
+  cannot catch a wire-format problem:
+
+  ```
+  pako->zlib  : OK          # Deluge (Python zlib) can read what we send
+  zlib->pako  : OK          # we can read what Deluge sends
+  byte-identical to zlib: true (55 bytes both)
+  zlib header byte: 0x78
+  ```
+
+  pako 3's default output is now byte-for-byte what Python/Node zlib produce, and still
+  begins `0x78` — which the protocol-v0 detector at `src/DelugeRPC.ts:279` keys on. No
+  code change needed for compression behaviour.
+
+The only source change was `import pako from 'pako'` → `import * as pako from 'pako'` in
+two files (v3 dropped the default export). `lint`, `bun test src`, and `build` all pass.
+Nothing needed for `Uint8Array<ArrayBuffer>` narrowing in 3.0.1 — `tsc` is clean.
+
 ## Decisions already made (don't re-ask)
 
 - Use `package-ecosystem: bun`, accepting the loss of automatic security-fix PRs.
@@ -78,17 +105,23 @@ reviewable PRs and never block routine maintenance.
 - Do **not** build a lockfile-sync workflow (see dead end above).
 - Weekly cadence stays.
 - Keep the `@types/node` major-version pin (Node 22 LTS line).
+- Auto-merge for the routine group: **yes, but not yet** — wait until one Dependabot PR
+  has demonstrably arrived with `bun.lock` included, so auto-merge cannot land a broken
+  lockfile unattended on a package that publishes to npm.
+- Migrate `pako` to 3 rather than pinning it to `^1`.
 
 ## Plan / steps
 
 1. [x] Diagnose why #17 is red — root cause: wrong `package-ecosystem`.
 2. [x] Rewrite `.github/dependabot.yml`: `bun` ecosystem, minor/patch group, majors solo.
-3. [ ] Push to `master` — **Dependabot only reads config from the default branch**, so this
-       change has no effect until pushed.
-4. [ ] Close #17 and let Dependabot re-open the split PRs (its diff is unsalvageable: wrong
-       grouping _and_ no lockfile).
-5. [ ] **Open question for user** — enable auto-merge for the minor/patch group?
-6. [ ] Separately: migrate `pako` 1 → 3 as its own PR (real code work, not a version bump).
+3. [x] Push to `master` — **Dependabot only reads config from the default branch**, so this
+       change has no effect until pushed. (`2be230d..e944491`)
+4. [x] Close #17 — its diff was unsalvageable (wrong grouping _and_ no lockfile).
+5. [x] Migrate `pako` 1 → 3 on branch `pako-3`.
+6. [ ] **Waiting on Dependabot's next weekly run** — confirm the PR it opens contains
+       `bun.lock`. This is the gate for step 7.
+7. [ ] Then enable auto-merge: `allow_auto_merge` on the repo plus a workflow calling
+       `gh pr merge --auto` restricted to the `routine` group.
 
 ## Progress log
 
@@ -96,19 +129,16 @@ reviewable PRs and never block routine maintenance.
 - [x] Verified `groups.*.update-types` takes `major`/`minor`/`patch` (not the
       `version-update:semver-*` spelling used by `ignore`), and that non-matching updates
       still open individual PRs.
-- [x] Rewrote `.github/dependabot.yml`.
-- [ ] Pushed; awaiting first Dependabot run to confirm `bun.lock` now appears in diffs.
+- [x] Rewrote `.github/dependabot.yml`; pushed to `master` as `e944491`.
+- [x] Closed #17 with a pointer to the root cause; its branch was deleted.
+- [x] `pako` 1 → 3 migrated on branch `pako-3`; `@types/pako` dropped as redundant.
+      Verified zlib wire compatibility empirically. lint + test + build green.
+- [ ] Awaiting the first post-fix Dependabot run to confirm `bun.lock` appears in diffs.
 
 ## Open questions for the user
 
-1. **Auto-merge the minor/patch group once CI is green?** Requires enabling
-   `allow_auto_merge` on the repo plus a small workflow calling `gh pr merge --auto`.
-   _Recommendation: yes_ — but only after one manual cycle proves the `bun` ecosystem
-   really does produce a lockfile, so auto-merge can't land a broken lock unattended.
-   Note this repo publishes to npm, so a bad auto-merge has a path to a release.
-2. **Take the `pako` 1 → 3 migration now, or pin `pako` to `^1`?** The v3 rewrite touches
-   compression on the Deluge wire protocol and deserves its own PR with the existing
-   regression tests as the check.
+_None outstanding._ Next action is time-gated, not decision-gated: wait for Dependabot's
+next weekly run (step 6), then wire up auto-merge (step 7).
 
 ## Things not to do
 
