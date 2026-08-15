@@ -28,7 +28,22 @@ jobs:
 
       - name: Queue non-major updates for auto-merge
         if: steps.meta.outputs.update-type != 'version-update:semver-major'
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: |
+          # Normal path: CI has only just been queued, so the required check is pending,
+          # the PR is blocked, and auto-merge attaches and waits.
+          if gh pr merge --auto --squash "$PR_URL"; then exit 0; fi
+
+          # GitHub refuses to *enable* auto-merge on a PR with nothing left blocking it
+          # ("Pull request is in clean status"). That means the gate we wanted to wait for
+          # is already satisfied, so merging now is the same outcome -- but confirm that is
+          # really why the call failed rather than merging on any error at all.
+          state="$(gh pr view "$PR_URL" --json mergeStateStatus -q .mergeStateStatus)"
+          echo "mergeStateStatus=$state"
+          if [ "$state" != "CLEAN" ]; then
+            echo "::error::auto-merge failed and the PR is not clean ($state); leaving it alone"
+            exit 1
+          fi
+          gh pr merge --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
