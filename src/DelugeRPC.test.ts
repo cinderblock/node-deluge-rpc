@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
-import pako from 'pako';
+import * as pako from 'pako';
 import { encode, decode } from 'python-rencode';
 import type { RencodableData } from 'python-rencode';
 

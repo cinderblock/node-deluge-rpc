@@ -61,7 +61,7 @@
   "homepage": "https://github.com/cinderblock/node-deluge-rpc#readme",
   "dependencies": {
     "camelcase-keys-deep": "^0.1.0",
-    "pako": "^1.0.10",
+    "pako": "^3.0.1",
     "python-rencode": "^2.0.0",
     "smallest-power-of-two": "^2.0.0",
     "snakecase-keys": "^3.1.0"
@@ -70,7 +70,6 @@
     "@types/bun": "^1.2.0",
     "@types/camelcase-keys-deep": "^0.1.0",
     "@types/node": "^22.19.19",
-    "@types/pako": "^1.0.1",
     "prettier": "^3.5.0",
     "typescript": "^6.0.3"
   }
