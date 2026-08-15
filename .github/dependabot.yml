@@ -1,13 +1,21 @@
 version: 2
 updates:
-  - package-ecosystem: npm
+  # `bun`, not `npm`: Bun is its own Dependabot ecosystem. The npm updater looks for
+  # package-lock.json/yarn.lock/pnpm-lock.yaml, finds none, and edits package.json
+  # alone — leaving bun.lock stale and every PR red on `bun install --frozen-lockfile`.
+  - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
     groups:
-      all-deps:
+      # Routine updates arrive as one PR. Majors match no group, so they arrive
+      # individually and a single breaking bump can't hold up the rest.
+      routine:
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
     ignore:
       # Stay on the Node 22 LTS line for type definitions.
       - dependency-name: '@types/node'
@@ -17,3 +25,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns:
+          - '*'
