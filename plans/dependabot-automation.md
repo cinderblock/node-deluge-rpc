@@ -118,10 +118,11 @@ Nothing needed for `Uint8Array<ArrayBuffer>` narrowing in 3.0.1 — `tsc` is cle
        change has no effect until pushed. (`2be230d..e944491`)
 4. [x] Close #17 — its diff was unsalvageable (wrong grouping _and_ no lockfile).
 5. [x] Migrate `pako` 1 → 3 on branch `pako-3`.
-6. [ ] **Waiting on Dependabot's next weekly run** — confirm the PR it opens contains
-       `bun.lock`. This is the gate for step 7.
-7. [ ] Then enable auto-merge: `allow_auto_merge` on the repo plus a workflow calling
-       `gh pr merge --auto` restricted to the `routine` group.
+6. [x] Confirmed on Dependabot's re-run: **all four new PRs (#18–#21) include `bun.lock`**,
+       and the grouping split correctly — #18 is the batched `routine` group, #19/#20/#21
+       are individual majors.
+7. [x] Enabled auto-merge: `allow_auto_merge` on the repo, branch protection on `master`
+       requiring the `test` check, and `.github/workflows/dependabot-auto-merge.yml`.
 
 ## Progress log
 
@@ -139,6 +140,27 @@ Nothing needed for `Uint8Array<ArrayBuffer>` narrowing in 3.0.1 — `tsc` is cle
 
 _None outstanding._ Next action is time-gated, not decision-gated: wait for Dependabot's
 next weekly run (step 6), then wire up auto-merge (step 7).
+
+### Auto-merge needs a required status check to mean anything
+
+GitHub's auto-merge only _waits_ if something is blocking the PR. `master` had no
+protection, so `gh pr merge --auto` would have merged each Dependabot PR the instant it
+opened — before CI ran. Enabling auto-merge without a required check is worse than not
+enabling it at all.
+
+Configured alongside it:
+
+- `allow_auto_merge: true` on the repo.
+- Branch protection on `master`: required status check `test` (the job name in `ci.yml`),
+  `strict: false`, no required reviews, `allow_force_pushes: false`.
+- **`enforce_admins: false`** — deliberate, so direct pushes to `master` still work for the
+  repo owner, which is how this repo is normally maintained. The required check gates PR
+  merges, not your own pushes.
+
+`publish.yml` triggers only on `v*` tags and `workflow_dispatch`, never on a push to
+`master`. So an auto-merged dependency update has **no automatic path to npm** — a release
+still requires deliberately pushing a version tag. This is what makes unattended merging of
+routine updates acceptable on a published package.
 
 ## Things not to do
 

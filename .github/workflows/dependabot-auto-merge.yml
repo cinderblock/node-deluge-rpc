@@ -1,0 +1,34 @@
+name: Dependabot auto-merge
+
+# Queues routine Dependabot updates to merge themselves once CI passes. Majors are
+# left alone: they are the ones that need a human to read a changelog.
+#
+# `pull_request_target` runs in the base-repo context, which is what grants the write
+# access `gh pr merge` needs — Dependabot's own PR token is read-only. That trigger is
+# only safe because this job never checks out or executes the PR's code; it reads
+# metadata and calls the API. Do not add a checkout step here.
+#
+# This relies on a required status check being configured on the default branch. Without
+# one, nothing blocks the PR and `--auto` merges it immediately, before CI has run.
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch update metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+
+      - name: Queue non-major updates for auto-merge
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
