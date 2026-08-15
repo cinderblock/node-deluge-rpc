@@ -134,7 +134,23 @@ Nothing needed for `Uint8Array<ArrayBuffer>` narrowing in 3.0.1 — `tsc` is cle
 - [x] Closed #17 with a pointer to the root cause; its branch was deleted.
 - [x] `pako` 1 → 3 migrated on branch `pako-3`; `@types/pako` dropped as redundant.
       Verified zlib wire compatibility empirically. lint + test + build green.
-- [ ] Awaiting the first post-fix Dependabot run to confirm `bun.lock` appears in diffs.
+- [x] Dependabot re-ran on the new config immediately. **All four PRs include `bun.lock`**
+      and the grouping split as intended.
+- [x] Auto-merge configured and the workflow is registered and active.
+
+### Where the open PRs stand
+
+| PR  | What                                   | CI  | Disposition                                     |
+| --- | -------------------------------------- | --- | ----------------------------------------------- |
+| #18 | `routine` group, 2 updates (lock-only) | ✅  | Left for the first by-hand merge                |
+| #19 | `snakecase-keys` 3.2.1 → 9.0.2 (major) | ✅  | Human review — 6 majors of drift, but CI passes |
+| #20 | `typescript` 6.0.3 → 7.0.2 (major)     | ✅  | Human review                                    |
+| #21 | Dependabot's own `pako` bump           | ❌  | Superseded by #22; leave it                     |
+| #22 | `pako` 1 → 3, done properly            | ✅  | Ready to merge                                  |
+
+Leave #21 alone rather than closing it: closing a Dependabot PR by hand tells Dependabot
+to stop proposing that version. It closes itself once #22 lands and it sees `pako` already
+at 3.x.
 
 ## Open questions for the user
 
@@ -161,6 +177,13 @@ Configured alongside it:
 `master`. So an auto-merged dependency update has **no automatic path to npm** — a release
 still requires deliberately pushing a version tag. This is what makes unattended merging of
 routine updates acceptable on a published package.
+
+**Sharp edge:** GitHub refuses to _enable_ auto-merge on a PR with nothing left blocking it,
+answering `Pull request is in clean status (enablePullRequestAutoMerge)`. Found by running
+the workflow's own command against the already-green #18. It should not arise on the normal
+path — when the workflow fires, CI has only just been queued, so the required check is
+pending and the PR is blocked — but the workflow handles it by falling back to a direct
+merge, gated on `mergeStateStatus == CLEAN` so an unrelated failure cannot merge anything.
 
 ## Things not to do
 
