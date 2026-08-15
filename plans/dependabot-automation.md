@@ -143,10 +143,47 @@ Nothing needed for `Uint8Array<ArrayBuffer>` narrowing in 3.0.1 — `tsc` is cle
 | PR  | What                                   | CI  | Disposition                                     |
 | --- | -------------------------------------- | --- | ----------------------------------------------- |
 | #18 | `routine` group, 2 updates (lock-only) | ✅  | Left for the first by-hand merge                |
-| #19 | `snakecase-keys` 3.2.1 → 9.0.2 (major) | ✅  | Human review — 6 majors of drift, but CI passes |
-| #20 | `typescript` 6.0.3 → 7.0.2 (major)     | ✅  | Human review                                    |
+| #19 | `snakecase-keys` 3.2.1 → 9.0.2 (major) | ✅  | Reviewed safe (see below); verdict posted on PR |
+| #20 | `typescript` 6.0.3 → 7.0.2 (major)     | ✅  | Reviewed safe (see below); verdict posted on PR |
 | #21 | Dependabot's own `pako` bump           | ❌  | Superseded by #22; leave it                     |
 | #22 | `pako` 1 → 3, done properly            | ✅  | Ready to merge                                  |
+
+### Why "CI is green" was not enough for the two majors
+
+Both were checked past the status badge, because in each case CI structurally cannot see the
+risk. Neither needed a code change; both verdicts are posted as comments on their PRs.
+
+**#19 `snakecase-keys` 3 → 9.** The one call site is
+`(snakeCaseKeys as any)(opts, { deep: true })` at `src/DelugeRPC.ts:496` — the `as any`
+means `tsc` cannot catch a signature change, and `handleOptions()` has no unit coverage
+(the unit tests exercise `daemon.login` wire frames, not torrent options). So a green build
+says nothing here. Ran v3.2.1 and v9.0.2 side by side on a Deluge-shaped options object
+with nested objects, arrays and digit-adjacent keys: **byte-identical output**, `{ deep: true }`
+still honoured, `change-case` v5 treating digit boundaries the same. v9 is ESM-only, which
+this package already is.
+
+**#20 `typescript` 6 → 7.** This is the native compiler rewrite, and for a published library
+the emitted `dist/` _is_ the product — CI runs `tsc` but never diffs its output. Built the
+branch against a TS 6.0.3 baseline in a scratch worktree:
+
+| Output                       | Result             |
+| ---------------------------- | ------------------ |
+| `.js` (runtime behaviour)    | **byte-identical** |
+| `.d.ts` (published API type) | **byte-identical** |
+| `.js.map` / `.d.ts.map`      | differ             |
+
+Only source maps moved, which is expected from a different compiler implementation. Nothing
+consumers execute or typecheck against changed.
+
+**Follow-up worth doing sometime** (unrelated to the bump): that `as any` at
+`src/DelugeRPC.ts:496` is precisely why six majors of drift could sail past the type checker.
+Typing it properly would make the next `snakecase-keys` major self-reporting.
+
+### The 7 skipped tests are not hidden failures
+
+`src/integration.test.ts:116` is `describe.skipIf(skipIntegration)`, gated on `DELUGE1_PORT`
+/ `DELUGE_PORT`. They need a real Deluge daemon, so they cannot run in CI — they are not
+silently-broken tests.
 
 Leave #21 alone rather than closing it: closing a Dependabot PR by hand tells Dependabot
 to stop proposing that version. It closes itself once #22 lands and it sees `pako` already
