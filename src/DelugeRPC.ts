@@ -5,7 +5,7 @@ import { readFile } from 'fs';
 
 import camelCaseKeys from 'camelcase-keys-deep';
 import snakeCaseKeys from 'snakecase-keys';
-import pako from 'pako';
+import * as pako from 'pako';
 
 import { encode, decode } from 'python-rencode';
 import type {
