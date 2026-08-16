@@ -138,15 +138,43 @@ Nothing needed for `Uint8Array<ArrayBuffer>` narrowing in 3.0.1 — `tsc` is cle
       and the grouping split as intended.
 - [x] Auto-merge configured and the workflow is registered and active.
 
-### Where the open PRs stand
+### The backlog, and how it cleared
 
-| PR  | What                                   | CI  | Disposition                                     |
-| --- | -------------------------------------- | --- | ----------------------------------------------- |
-| #18 | `routine` group, 2 updates (lock-only) | ✅  | Left for the first by-hand merge                |
-| #19 | `snakecase-keys` 3.2.1 → 9.0.2 (major) | ✅  | Reviewed safe (see below); verdict posted on PR |
-| #20 | `typescript` 6.0.3 → 7.0.2 (major)     | ✅  | Reviewed safe (see below); verdict posted on PR |
-| #21 | Dependabot's own `pako` bump           | ❌  | Superseded by #22; leave it                     |
-| #22 | `pako` 1 → 3, done properly            | ✅  | Ready to merge                                  |
+The config fix produced a one-off spike of **four** PRs where there had been one. That was
+not the new steady state — it was four majors that had piled up invisibly while the broken
+`npm` config made every PR red. Splitting them out is what made them individually visible
+and individually mergeable. All are now landed:
+
+| PR  | What                                   | Outcome                                     |
+| --- | -------------------------------------- | ------------------------------------------- |
+| #18 | `routine` group, 2 updates (lock-only) | merged `8d8cf1d`                            |
+| #19 | `snakecase-keys` 3.2.1 → 9.0.2 (major) | merged `cfb4f9c` after a Dependabot rebase  |
+| #20 | `typescript` 6.0.3 → 7.0.2 (major)     | merged `acb88ba`                            |
+| #21 | Dependabot's own `pako` bump           | **self-closed**, as predicted, once #22 hit |
+| #22 | `pako` 1 → 3, done properly            | merged `b368dcc`                            |
+
+`master` verified afterwards with everything combined: `bun install --frozen-lockfile`,
+lint, test and build all clean.
+
+**Merge-order gotcha:** all four touched `bun.lock`, so each merge conflicted the ones
+behind it. Dependabot rebases its own PRs on request (`@dependabot rebase` as a comment).
+For #22 the conflict was resolved by **merging `master` into the branch, not rebasing** —
+a rebase would have needed a force-push. Resolution was to let `package.json` auto-merge and
+then regenerate `bun.lock` with a plain `bun install`, which is reliable because the lockfile
+is a pure function of the manifest.
+
+### Live confirmation the auto-merge guard works
+
+The workflow fired for real on #19's rebase, and the run shows:
+
+```
+Fetch update metadata: success
+Queue non-major updates for auto-merge: skipped
+```
+
+Correctly skipped, because #19 was a major. It also ran on #22 and reported `SKIPPED` at the
+job level, since #22 was authored by a human rather than `dependabot[bot]`. Both guards are
+confirmed against real PRs rather than by inspection.
 
 ### Why "CI is green" was not enough for the two majors
 
@@ -191,8 +219,14 @@ at 3.x.
 
 ## Open questions for the user
 
-_None outstanding._ Next action is time-gated, not decision-gated: wait for Dependabot's
-next weekly run (step 6), then wire up auto-merge (step 7).
+_None outstanding._ The work is finished: config fixed, backlog cleared, auto-merge live and
+confirmed against real PRs. Steady state from here is one `routine` PR per week that merges
+itself once CI passes, plus an individual PR whenever a dependency ships a major.
+
+One optional follow-up, unrelated to any of the bumps above: `src/DelugeRPC.ts:496` calls
+`(snakeCaseKeys as any)(opts, { deep: true })`. That cast is why six majors of
+`snakecase-keys` drift could pass the type checker unnoticed. Typing it properly would make
+the next major self-reporting.
 
 ### Auto-merge needs a required status check to mean anything
 
