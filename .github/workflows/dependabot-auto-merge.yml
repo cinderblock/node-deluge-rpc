@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Fetch update metadata
         id: meta
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@v3
 
       - name: Queue non-major updates for auto-merge
         if: steps.meta.outputs.update-type != 'version-update:semver-major'
